@@ -121,7 +121,7 @@
         const ADMIN_PASSWORD = 'admin123';
         
         // Verificar si ya está autenticado
-        if (localStorage.getItem('adminAuthenticated') === 'true') {
+        if (sessionStorage.getItem('adminAuthenticated') === 'true') {
             window.location.href = 'admin.html';
         }
         
@@ -132,9 +132,9 @@
             const errorMessage = document.getElementById('errorMessage');
             
             if (password === ADMIN_PASSWORD) {
-                // Guardar autenticación en localStorage (expira en 24 horas)
-                localStorage.setItem('adminAuthenticated', 'true');
-                localStorage.setItem('adminAuthTime', Date.now().toString());
+                // Guardar autenticación en sessionStorage (se cierra al cerrar la pestaña)
+                sessionStorage.setItem('adminAuthenticated', 'true');
+                sessionStorage.setItem('adminAuthTime', Date.now().toString());
                 window.location.href = 'admin.html';
             } else {
                 errorMessage.style.display = 'block';
@@ -142,16 +142,6 @@
                 document.getElementById('password').focus();
             }
         });
-        
-        // Verificar expiración de sesión (24 horas)
-        const authTime = localStorage.getItem('adminAuthTime');
-        if (authTime) {
-            const hoursSinceAuth = (Date.now() - parseInt(authTime)) / (1000 * 60 * 60);
-            if (hoursSinceAuth > 24) {
-                localStorage.removeItem('adminAuthenticated');
-                localStorage.removeItem('adminAuthTime');
-            }
-        }
     </script>
 </body>
 </html>

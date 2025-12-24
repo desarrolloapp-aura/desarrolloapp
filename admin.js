@@ -912,19 +912,22 @@ function inicializarEventos() {
     if (btnCerrarSesion) {
         btnCerrarSesion.onclick = function() {
             if (confirm('¿Está seguro de cerrar sesión?')) {
-                localStorage.removeItem('adminAuthenticated');
-                localStorage.removeItem('adminAuthTime');
+                sessionStorage.removeItem('adminAuthenticated');
+                sessionStorage.removeItem('adminAuthTime');
                 window.location.href = 'login-admin.html';
             }
         };
     }
     
-    // Volver al formulario
+    // Volver al formulario (limpiar sesión al salir)
     const btnVolver = document.getElementById('volverBtn');
     if (btnVolver) {
         console.log('Botón volver encontrado');
         btnVolver.onclick = function() {
             console.log('Volviendo al formulario...');
+            // Limpiar sesión al salir del panel de administración
+            sessionStorage.removeItem('adminAuthenticated');
+            sessionStorage.removeItem('adminAuthTime');
             window.location.href = 'index.html';
         };
     } else {

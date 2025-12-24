@@ -12,23 +12,19 @@
     <script>
         // Verificar autenticación antes de cargar la página
         (function() {
-            const isAuthenticated = localStorage.getItem('adminAuthenticated') === 'true';
-            const authTime = localStorage.getItem('adminAuthTime');
-            
-            // Verificar expiración (24 horas)
-            if (authTime) {
-                const hoursSinceAuth = (Date.now() - parseInt(authTime)) / (1000 * 60 * 60);
-                if (hoursSinceAuth > 24) {
-                    localStorage.removeItem('adminAuthenticated');
-                    localStorage.removeItem('adminAuthTime');
-                    window.location.href = 'login-admin.html';
-                    return;
-                }
-            }
+            const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
             
             if (!isAuthenticated) {
                 window.location.href = 'login-admin.html';
+                return;
             }
+            
+            // Limpiar sesión cuando el usuario sale de la página (navegación, retroceso, cierre de pestaña)
+            // sessionStorage se limpia automáticamente al cerrar la pestaña, pero también lo hacemos explícitamente
+            window.addEventListener('beforeunload', function() {
+                sessionStorage.removeItem('adminAuthenticated');
+                sessionStorage.removeItem('adminAuthTime');
+            });
         })();
     </script>
 </head>
