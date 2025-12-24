@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluación de Proveedores</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Evaluación de Proveedores</h1>
+        </header>
+
+        <form id="evaluationForm">
+            <!-- Sección 1: Evaluador -->
+            <section class="form-section">
+                <h2>1. Seleccione el Evaluador</h2>
+                <select id="evaluador" required>
+                    <option value="">-- Seleccione un evaluador --</option>
+                </select>
+            </section>
+
+            <!-- Sección 2: Tipo de Proveedor -->
+            <section class="form-section">
+                <h2>2. Tipo de Proveedor</h2>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="tipoProveedor" value="PRODUCTO" required>
+                        <span>PRODUCTO</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="tipoProveedor" value="SERVICIO" required>
+                        <span>SERVICIO</span>
+                    </label>
+                </div>
+            </section>
+
+            <!-- Sección 3: Proveedor -->
+            <section class="form-section">
+                <h2>3. Seleccione el Proveedor</h2>
+                <select id="proveedor" required>
+                    <option value="">-- Primero seleccione el tipo de proveedor --</option>
+                </select>
+            </section>
+
+            <!-- Sección 3.5: Correo del Proveedor -->
+            <section class="form-section" id="correoSection" style="display: none;">
+                <h2>3.5. Correo Electrónico del Proveedor</h2>
+                <input type="email" id="correoProveedor" placeholder="ejemplo@proveedor.com" required>
+                <small style="color: #666; display: block; margin-top: 5px;">Ingrese el correo electrónico del proveedor para enviar la evaluación</small>
+            </section>
+
+            <!-- Sección 4: Ítems de Evaluación -->
+            <section class="form-section" id="itemsSection" style="display: none;">
+                <h2 id="itemsTitle">4. Ítems de Evaluación</h2>
+                <div id="itemsContainer"></div>
+            </section>
+
+            <!-- Resultado Final -->
+            <section class="form-section" id="resultSection" style="display: none;">
+                <h2>Resultado Final</h2>
+                <div class="result-box">
+                    <div class="result-label">Resultado Ponderado:</div>
+                    <div class="result-value" id="resultadoFinal">0%</div>
+                </div>
+            </section>
+
+            <!-- Botones -->
+            <div class="button-group">
+                <button type="submit" id="guardarBtn"><span>💾 Guardar Evaluación</span></button>
+                <button type="button" id="limpiarBtn"><span>🗑️ Limpiar Formulario</span></button>
+                <button type="button" id="verEvaluacionesBtn"><span>📋 Ver Evaluaciones Guardadas</span></button>
+            </div>
+        </form>
+
+        <!-- Modal para ver evaluaciones -->
+        <div id="modalEvaluaciones" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Evaluaciones Guardadas</h2>
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #333;">Descargar Excel</h3>
+                    <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <button type="button" id="descargarExcelModalBtn" class="btn-excel" style="width: 100%; margin-bottom: 10px;">📥 DESCARGAR TOTAL (Todas las Evaluaciones)</button>
+                        <div id="botonesProveedores" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;"></div>
+                    </div>
+                </div>
+                <div id="evaluacionesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
