@@ -407,20 +407,32 @@ async function cargarEvaluaciones() {
                 evaluadores:evaluador_id (nombre),
                 proveedores:proveedor_id (nombre)
             `)
-            .order('fecha_evaluacion', { ascending: false });
+            .order('created_at', { ascending: false }); // Ordenar por fecha de guardado
         
         if (error) throw error;
         
-        return data.map(e => ({
-            id: e.id,
-            evaluador: e.evaluadores.nombre,
-            proveedor: e.proveedores.nombre,
-            tipo: e.tipo_proveedor,
-            correoProveedor: e.correo_proveedor,
-            respuestas: e.respuestas,
-            resultadoFinal: e.resultado_final,
-            fecha: e.fecha_evaluacion
-        }));
+        return data.map(e => {
+            // fecha_evaluacion es la fecha del calendario seleccionada
+            const fechaEvaluacion = e.fecha_evaluacion || new Date().toISOString();
+            // created_at es la fecha y hora cuando se guardó en la BD
+            const createdAt = e.created_at || new Date().toISOString();
+            // El campo en Supabase se llama "año" (con tilde)
+            const anio = e.año || e.anio || new Date(fechaEvaluacion).getFullYear();
+            
+            return {
+                id: e.id,
+                evaluador: e.evaluadores.nombre,
+                proveedor: e.proveedores.nombre,
+                tipo: e.tipo_proveedor,
+                correoProveedor: e.correo_proveedor,
+                respuestas: e.respuestas,
+                resultadoFinal: e.resultado_final,
+                fechaEvaluacion: fechaEvaluacion, // Fecha del calendario (fecha_evaluacion)
+                createdAt: createdAt, // Fecha de guardado (created_at)
+                fecha: fechaEvaluacion, // Mantener compatibilidad con código existente
+                anio: anio
+            };
+        });
     } catch (error) {
         console.error('Error al cargar evaluaciones:', error);
         return [];
@@ -465,6 +477,16 @@ async function guardarEvaluacionEnSupabase(evaluacion) {
             });
         }
         
+        // Usar la fecha del calendario para fecha_evaluacion
+        // created_at se maneja automáticamente por Supabase con default now()
+        const fechaEvaluacion = evaluacion.fechaEvaluacion || evaluacion.fecha || new Date().toISOString();
+        const anio = evaluacion.anio || new Date(fechaEvaluacion).getFullYear();
+        
+        console.log('💾 Guardando evaluación:');
+        console.log('  - fecha_evaluacion (del calendario):', fechaEvaluacion);
+        console.log('  - año:', anio);
+        console.log('  - created_at se asignará automáticamente por Supabase');
+        
         const { data, error } = await window.supabaseClient
             .from('evaluaciones')
             .insert([{
@@ -474,10 +496,18 @@ async function guardarEvaluacionEnSupabase(evaluacion) {
                 correo_proveedor: evaluacion.correoProveedor || null,
                 respuestas: respuestasArray,
                 resultado_final: evaluacion.resultadoFinal,
-                fecha_evaluacion: evaluacion.fecha || new Date().toISOString()
+                fecha_evaluacion: fechaEvaluacion, // Fecha del calendario seleccionada
+                año: anio  // El campo en Supabase se llama "año" (con tilde)
+                // created_at se asigna automáticamente por Supabase con default now()
             }])
             .select()
             .single();
+        
+        if (data) {
+            console.log('✅ Evaluación guardada:');
+            console.log('  - fecha_evaluacion:', data.fecha_evaluacion);
+            console.log('  - created_at:', data.created_at);
+        }
         
         if (error) throw error;
         return data;

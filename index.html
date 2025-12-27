@@ -96,6 +96,13 @@
                 </select>
             </section>
 
+            <!-- Sección 1.5: Fecha de Evaluación -->
+            <section class="form-section">
+                <h2>1.5. Fecha de Evaluación</h2>
+                <input type="date" id="anioEvaluacion" required style="width: 100%; padding: 12px; border: 2px solid #667eea; border-radius: 8px; font-size: 1rem;">
+                <small style="color: #666; display: block; margin-top: 5px;">Seleccione la fecha para la cual está realizando la evaluación (esta fecha se guardará en la base de datos)</small>
+            </section>
+
             <!-- Sección 2: Tipo de Proveedor -->
             <section class="form-section">
                 <h2>2. Tipo de Proveedor</h2>
@@ -145,25 +152,8 @@
             <div class="button-group">
                 <button type="submit" id="guardarBtn"><span>💾 Guardar Evaluación</span></button>
                 <button type="button" id="limpiarBtn"><span>🗑️ Limpiar Formulario</span></button>
-                <button type="button" id="verEvaluacionesBtn"><span>📋 Ver Evaluaciones Guardadas</span></button>
             </div>
         </form>
-
-        <!-- Modal para ver evaluaciones -->
-        <div id="modalEvaluaciones" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2>Evaluaciones Guardadas</h2>
-                <div style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 10px; color: #333;">Descargar Excel</h3>
-                    <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                        <button type="button" id="descargarExcelModalBtn" class="btn-excel" style="width: 100%; margin-bottom: 10px;">📥 DESCARGAR TOTAL (Todas las Evaluaciones)</button>
-                        <div id="botonesProveedores" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;"></div>
-                    </div>
-                </div>
-                <div id="evaluacionesList"></div>
-            </div>
-        </div>
     </div>
 
     <script src="script.js"></script>

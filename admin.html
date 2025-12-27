@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,134 +10,275 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="supabase-service.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="admin-pdf.js"></script>
     <script>
         // Verificar autenticación antes de cargar la página
-        (function() {
+        (function () {
             const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
-            
+
             if (!isAuthenticated) {
                 window.location.href = 'login-admin.html';
                 return;
             }
-            
+
             // Limpiar sesión cuando el usuario sale de la página (navegación, retroceso, cierre de pestaña)
             // sessionStorage se limpia automáticamente al cerrar la pestaña, pero también lo hacemos explícitamente
-            window.addEventListener('beforeunload', function() {
+            window.addEventListener('beforeunload', function () {
                 sessionStorage.removeItem('adminAuthenticated');
                 sessionStorage.removeItem('adminAuthTime');
             });
         })();
     </script>
 </head>
+
 <body>
-    <div class="admin-container">
-        <header class="admin-header">
-            <h1>⚙️ Panel de Administración</h1>
-            <p>Gestiona las preguntas, porcentajes y descripciones del sistema de evaluación</p>
-            <div class="admin-actions">
-                <button id="cerrarSesionBtn" class="btn-secondary" style="background: rgba(220, 53, 69, 0.2); border-color: #dc3545;">🚪 Cerrar Sesión</button>
-                <button id="volverBtn" class="btn-secondary">← Volver al Formulario</button>
+    <div class="admin-layout">
+        <nav class="admin-sidebar">
+            <div class="sidebar-header">
+                <h2>Panel Admin</h2>
             </div>
-        </header>
+            <ul class="sidebar-menu">
+                <li class="menu-item active" data-target="section-general">� General</li>
+                <li class="menu-item" data-target="section-items-producto">🟦 Ítems Producto</li>
+                <li class="menu-item" data-target="section-items-servicio">🟩 Ítems Servicio</li>
+                <li class="menu-item" data-target="section-evaluadores">👥 Evaluadores</li>
+                <li class="menu-item" data-target="section-proveedores">🏢 Proveedores</li>
+                <li class="menu-item" data-target="section-asignaciones">🔗 Asignaciones</li>
+                <li class="menu-item" data-target="section-evaluaciones">📋 Evaluaciones Guardadas</li>
+                <li class="menu-item" data-target="section-pdfs">📄 Generar PDFs</li>
+                <li class="menu-item" data-target="section-configuracion">⚙️ Configuración</li>
+            </ul>
+            <div class="sidebar-footer">
+                <button id="guardarConfigBtnSidebar" class="btn-save-sidebar">💾 Guardar Todo</button>
+                <button id="volverBtn" class="btn-secondary-sidebar">← Volver al Form</button>
+                <button id="cerrarSesionBtn" class="btn-danger-sidebar">🚪 Cerrar Sesión</button>
+            </div>
+        </nav>
 
-        <div class="admin-content">
-            <!-- Sección: Cambiar Contraseña -->
-            <section class="admin-section" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 2px solid rgba(102, 126, 234, 0.3);">
-                <h2>🔐 Cambiar Contraseña de Administrador</h2>
-                <p class="section-description" style="color: #666; margin-bottom: 20px;">Actualiza la contraseña de acceso al panel de administración</p>
-                <div class="form-group">
-                    <label>Contraseña Actual:</label>
-                    <input type="password" id="passwordActual" placeholder="Ingrese su contraseña actual">
-                </div>
-                <div class="form-group">
-                    <label>Nueva Contraseña:</label>
-                    <input type="password" id="nuevaPassword" placeholder="Ingrese la nueva contraseña">
-                </div>
-                <div class="form-group">
-                    <label>Confirmar Nueva Contraseña:</label>
-                    <input type="password" id="confirmarPassword" placeholder="Confirme la nueva contraseña">
-                </div>
-                <button type="button" id="cambiarPasswordBtn" class="btn-add" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">🔑 Cambiar Contraseña</button>
-                <div id="mensajePassword" class="mensaje-exito" style="display: none; margin-top: 15px;"></div>
-            </section>
+        <main class="admin-main-content">
+            <header class="main-header">
+                <h1 id="headerTitle">Información General</h1>
+                <p>Gestiona la configuración del sistema de evaluación</p>
+            </header>
 
-            <!-- Sección: Información General -->
-            <section class="admin-section">
-                <h2>📝 Información General</h2>
-                <div class="form-group">
-                    <label>Título Principal:</label>
-                    <input type="text" id="tituloPrincipal" placeholder="Evaluación de Proveedores">
-                </div>
-                <div class="form-group">
-                    <label>Descripción de la Evaluación:</label>
-                    <textarea id="descripcionEvaluacion" rows="3" placeholder="Este sistema permite evaluar..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Objetivo:</label>
-                    <textarea id="objetivoEvaluacion" rows="3" placeholder="Medir y mejorar continuamente..."></textarea>
-                </div>
-            </section>
-
-            <!-- Sección: Ítems de PRODUCTO -->
-            <section class="admin-section">
-                <h2>🟦 Ítems de Evaluación - PRODUCTO</h2>
-                <div id="itemsProductoContainer"></div>
-                <button type="button" id="agregarItemProducto" class="btn-add">+ Agregar Ítem</button>
-            </section>
-
-            <!-- Sección: Ítems de SERVICIO -->
-            <section class="admin-section">
-                <h2>🟩 Ítems de Evaluación - SERVICIO</h2>
-                <div id="itemsServicioContainer"></div>
-                <button type="button" id="agregarItemServicio" class="btn-add">+ Agregar Ítem</button>
-            </section>
-
-            <!-- Sección: Gestión de Evaluadores -->
-            <section class="admin-section">
-                <h2>👥 Gestión de Evaluadores</h2>
-                <div class="form-group">
-                    <label>Agregar Nuevo Evaluador:</label>
-                    <div class="add-evaluador-container">
-                        <input type="text" id="nuevoEvaluador" placeholder="Nombre del evaluador">
-                        <button type="button" id="agregarEvaluadorBtn" class="btn-add">+ Agregar Evaluador</button>
+            <div class="content-wrapper">
+                <!-- Sección: Información General -->
+                <section id="section-general" class="admin-section active-section">
+                    <h2>📝 Información General</h2>
+                    <div class="form-group">
+                        <label>Título Principal:</label>
+                        <input type="text" id="tituloPrincipal" placeholder="Evaluación de Proveedores">
                     </div>
-                </div>
-                <div id="evaluadoresList" class="evaluadores-grid"></div>
-            </section>
-
-            <!-- Sección: Gestión de Proveedores -->
-            <section class="admin-section">
-                <h2>🏢 Gestión de Proveedores</h2>
-                <div class="form-group">
-                    <label>Agregar Nuevo Proveedor:</label>
-                    <div class="add-proveedor-container">
-                        <input type="text" id="nuevoProveedor" placeholder="Nombre del proveedor">
-                        <select id="tipoNuevoProveedor">
-                            <option value="PRODUCTO">PRODUCTO</option>
-                            <option value="SERVICIO">SERVICIO</option>
-                        </select>
-                        <button type="button" id="agregarProveedorBtn" class="btn-add">+ Agregar Proveedor</button>
+                    <div class="form-group">
+                        <label>Descripción de la Evaluación:</label>
+                        <textarea id="descripcionEvaluacion" rows="3"
+                            placeholder="Este sistema permite evaluar..."></textarea>
                     </div>
-                </div>
-                <div id="proveedoresList" class="proveedores-grid"></div>
-            </section>
+                    <div class="form-group">
+                        <label>Objetivo:</label>
+                        <textarea id="objetivoEvaluacion" rows="3"
+                            placeholder="Medir y mejorar continuamente..."></textarea>
+                    </div>
+                </section>
 
-            <!-- Sección: Asignación de Proveedores a Evaluadores -->
-            <section class="admin-section">
-                <h2>🔗 Asignar Proveedores a Evaluadores</h2>
-                <p class="section-description">Selecciona un evaluador y asigna sus proveedores correspondientes:</p>
-                <div id="asignacionesContainer" class="asignaciones-container"></div>
-            </section>
+                <!-- Sección: Ítems de PRODUCTO -->
+                <section id="section-items-producto" class="admin-section" style="display: none;">
+                    <h2>🟦 Ítems de Evaluación - PRODUCTO</h2>
+                    <div id="itemsProductoContainer"></div>
+                    <button type="button" id="agregarItemProducto" class="btn-add">+ Agregar Ítem</button>
+                </section>
 
-            <!-- Sección: Guardar -->
-            <section class="admin-section">
-                <button type="button" id="guardarConfigBtn" class="btn-save">💾 Guardar</button>
-                <div id="mensajeGuardado" class="mensaje-exito" style="display: none;"></div>
-            </section>
-        </div>
+                <!-- Sección: Ítems de SERVICIO -->
+                <section id="section-items-servicio" class="admin-section" style="display: none;">
+                    <h2>🟩 Ítems de Evaluación - SERVICIO</h2>
+                    <div id="itemsServicioContainer"></div>
+                    <button type="button" id="agregarItemServicio" class="btn-add">+ Agregar Ítem</button>
+                </section>
+
+                <!-- Sección: Gestión de Evaluadores -->
+                <section id="section-evaluadores" class="admin-section" style="display: none;">
+                    <h2>👥 Gestión de Evaluadores</h2>
+                    <div class="form-group">
+                        <label>Agregar Nuevo Evaluador:</label>
+                        <div class="add-evaluador-container">
+                            <input type="text" id="nuevoEvaluador" placeholder="Nombre del evaluador">
+                            <button type="button" id="agregarEvaluadorBtn" class="btn-add">+ Agregar Evaluador</button>
+                        </div>
+                    </div>
+                    <div id="evaluadoresList" class="evaluadores-grid"></div>
+                </section>
+
+                <!-- Sección: Gestión de Proveedores -->
+                <section id="section-proveedores" class="admin-section" style="display: none;">
+                    <h2>🏢 Gestión de Proveedores</h2>
+                    <div class="form-group">
+                        <label>Agregar Nuevo Proveedor:</label>
+                        <div class="add-proveedor-container">
+                            <input type="text" id="nuevoProveedor" placeholder="Nombre del proveedor">
+                            <select id="tipoNuevoProveedor">
+                                <option value="PRODUCTO">PRODUCTO</option>
+                                <option value="SERVICIO">SERVICIO</option>
+                            </select>
+                            <button type="button" id="agregarProveedorBtn" class="btn-add">+ Agregar Proveedor</button>
+                        </div>
+                    </div>
+                    <div id="proveedoresList" class="proveedores-grid"></div>
+                </section>
+
+                <!-- Sección: Asignación de Proveedores a Evaluadores -->
+                <section id="section-asignaciones" class="admin-section" style="display: none;">
+                    <h2>🔗 Asignar Proveedores a Evaluadores</h2>
+                    <p class="section-description">Selecciona un evaluador y asigna sus proveedores correspondientes:
+                    </p>
+                    <div id="asignacionesContainer" class="asignaciones-container"></div>
+                </section>
+
+                <!-- Sección: Evaluaciones Guardadas -->
+                <section id="section-evaluaciones" class="admin-section" style="display: none;">
+                    <h2>📋 Evaluaciones Guardadas</h2>
+                    <div style="margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-size: 1.1rem;">📅 Seleccione el Año:</label>
+                            <select id="filtroAnio" style="width: 100%; max-width: 300px; padding: 12px; border: 2px solid #667eea; border-radius: 8px; font-size: 1rem; font-weight: 600;">
+                                <option value="">-- Seleccione un año --</option>
+                            </select>
+                        </div>
+                        <div id="contenidoAnio" style="display: none; margin-top: 20px;">
+                            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                <button type="button" id="descargarAnioCompletoBtn" class="btn-add" style="width: 100%; padding: 12px 20px; font-size: 1rem; white-space: normal; word-wrap: break-word;">📥 DESCARGAR TODO EL AÑO SELECCIONADO</button>
+                            </div>
+                            <h3 style="margin-bottom: 15px; color: #333;">Evaluaciones Individuales:</h3>
+                            <div id="evaluacionesList"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Sección: Generar PDFs -->
+                <section id="section-pdfs" class="admin-section" style="display: none;">
+                    <h2>📄 Generar PDFs de Evaluaciones</h2>
+                    <div style="margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-size: 1.1rem;">📅 Seleccione el Año:</label>
+                            <select id="filtroAnioPDF" style="width: 100%; max-width: 300px; padding: 12px; border: 2px solid #667eea; border-radius: 8px; font-size: 1rem; font-weight: 600;">
+                                <option value="">-- Seleccione un año --</option>
+                            </select>
+                        </div>
+                        <div id="contenidoAnioPDF" style="display: none; margin-top: 20px;">
+                            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                <button type="button" id="descargarPDFAnioCompletoBtn" class="btn-add" style="width: 100%; padding: 12px 20px; font-size: 1rem; white-space: normal; word-wrap: break-word;">📥 DESCARGAR TODOS LOS PDFs DEL AÑO SELECCIONADO</button>
+                            </div>
+                            <h3 style="margin-bottom: 15px; color: #333;">PDFs Individuales:</h3>
+                            <div id="pdfsList"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Sección: Configuración (Cambiar contraseña, etc) -->
+                <section id="section-configuracion" class="admin-section" style="display: none;">
+                    <h2>⚙️ Configuración del Sistema</h2>
+
+                    <!-- Sección: Cambiar Contraseña -->
+                    <div class="config-card"
+                        style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 2px solid rgba(102, 126, 234, 0.3); padding: 20px; border-radius: 10px;">
+                        <h3>🔐 Cambiar Contraseña de Administrador</h3>
+                        <p class="section-description" style="color: #666; margin-bottom: 20px;">Actualiza la contraseña
+                            de acceso al panel de administración</p>
+                        <div class="form-group">
+                            <label>Contraseña Actual:</label>
+                            <input type="password" id="passwordActual" placeholder="Ingrese su contraseña actual">
+                        </div>
+                        <div class="form-group">
+                            <label>Nueva Contraseña:</label>
+                            <input type="password" id="nuevaPassword" placeholder="Ingrese la nueva contraseña">
+                        </div>
+                        <div class="form-group">
+                            <label>Confirmar Nueva Contraseña:</label>
+                            <input type="password" id="confirmarPassword" placeholder="Confirme la nueva contraseña">
+                        </div>
+                        <button type="button" id="cambiarPasswordBtn" class="btn-add"
+                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">�
+                            Cambiar Contraseña</button>
+                        <div id="mensajePassword" class="mensaje-exito" style="display: none; margin-top: 15px;"></div>
+                    </div>
+                </section>
+
+                <!-- Sección para mensajes globales -->
+                <div id="mensajeGuardado" class="mensaje-exito" style="display: none; margin-top: 20px;"></div>
+
+
+            </div>
+        </main>
     </div>
 
     <script src="admin.js"></script>
-</body>
-</html>
+    <script>
+        // Script para manejar la navegación del sidebar
+        document.addEventListener('DOMContentLoaded', function () {
+            const menuItems = document.querySelectorAll('.menu-item');
+            const sections = document.querySelectorAll('.admin-section');
+            const headerTitle = document.getElementById('headerTitle');
 
+            // Función para cambiar de sección
+            function switchSection(targetId, titleText) {
+                // Ocultar todas las secciones
+                sections.forEach(section => {
+                    section.style.display = 'none';
+                    section.classList.remove('active-section');
+                });
+
+                // Mostrar la sección objetivo
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.style.display = 'block';
+                    targetSection.classList.add('active-section');
+                    // Scroll al inicio del contenido
+                    window.scrollTo(0, 0);
+                }
+
+                // Actualizar menú activo
+                menuItems.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('data-target') === targetId) {
+                        item.classList.add('active');
+                    }
+                });
+
+                // Actualizar título
+                if (headerTitle) {
+                    headerTitle.textContent = titleText;
+                }
+            }
+
+            // Event listeners para el menú
+            menuItems.forEach(item => {
+                item.addEventListener('click', function () {
+                    const target = this.getAttribute('data-target');
+                    // Obtener texto del título (sin el icono si se prefiere)
+                    let title = this.textContent;
+                    switchSection(target, title);
+                });
+            });
+
+            // Vincular el botón de guardar del sidebar al botón original (que puede estar oculto o lo usamos directamente)
+            const guardarBtnSidebar = document.getElementById('guardarConfigBtnSidebar');
+            if (guardarBtnSidebar) {
+                guardarBtnSidebar.addEventListener('click', function () {
+                    if (typeof guardarConfiguracion === 'function') {
+                        guardarConfiguracion();
+                    } else if (typeof guardarConfiguracionCompleta === 'function') {
+                        guardarConfiguracionCompleta();
+                    } else {
+                        console.error('La función guardarConfiguracion no está definida');
+                        // Intento de fallback a clickear el botón original si existe
+                        const originalBtn = document.getElementById('guardarConfigBtn');
+                        if (originalBtn) originalBtn.click();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

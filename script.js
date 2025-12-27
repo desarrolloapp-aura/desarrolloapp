@@ -137,7 +137,7 @@ async function cargarConfiguracionEvaluacionLocal() {
 // Escala de respuesta
 const escalaRespuesta = [25, 50, 75, 100];
 
-// Inicialización
+// Inicializar año actual por defecto
 document.addEventListener('DOMContentLoaded', async function() {
     // Cargar datos desde Supabase
     try {
@@ -157,6 +157,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             evaluadores = Object.keys(asignacionProveedores);
         }
         
+        // Cargar evaluaciones para obtener años disponibles
+        const evaluaciones = await cargarEvaluaciones();
+        
+        // Inicializar selector de años
+        await inicializarSelectorAnios(evaluaciones);
+        
         console.log('✅ Datos cargados desde Supabase');
     } catch (error) {
         console.error('Error al cargar datos desde Supabase, usando valores por defecto:', error);
@@ -165,6 +171,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         itemsProducto = configEvaluacion.itemsProducto || [];
         itemsServicio = configEvaluacion.itemsServicio || [];
         evaluadores = Object.keys(asignacionProveedores);
+        
+        // Inicializar selector de años sin evaluaciones
+        await inicializarSelectorAnios([]);
     }
     
     // Continuar con la inicialización normal
@@ -172,6 +181,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     inicializarEvaluadores();
     inicializarEventos();
 });
+
+// Inicializar calendario (input type="date" nativo)
+async function inicializarSelectorAnios(evaluaciones) {
+    const anioInput = document.getElementById('anioEvaluacion');
+    if (!anioInput) return;
+    
+    // Establecer fecha actual por defecto
+    const hoy = new Date();
+    const fechaFormato = hoy.toISOString().split('T')[0]; // YYYY-MM-DD
+    anioInput.value = fechaFormato;
+    anioInput.dataset.anio = hoy.getFullYear();
+}
 
 function actualizarInformacionDesdeConfig() {
     // Actualizar título
@@ -244,6 +265,11 @@ function inicializarEventos() {
         await actualizarProveedores();
     });
 
+    // Cambio de fecha (año extraído de la fecha)
+    document.getElementById('anioEvaluacion').addEventListener('change', async function() {
+        await actualizarProveedores();
+    });
+
     // Cambio de tipo de proveedor
     document.querySelectorAll('input[name="tipoProveedor"]').forEach(radio => {
         radio.addEventListener('change', async function() {
@@ -270,6 +296,8 @@ function inicializarEventos() {
     document.addEventListener('click', function(e) {
         if (e.target.type === 'radio' && e.target.name.startsWith('item_')) {
             actualizarEstadoRadioButtons(e.target);
+            // También calcular resultado al hacer click
+            calcularResultado();
         }
     });
 
@@ -284,32 +312,14 @@ function inicializarEventos() {
         limpiarFormulario();
     });
 
-    // Ver evaluaciones
-    document.getElementById('verEvaluacionesBtn').addEventListener('click', function() {
-        mostrarEvaluaciones();
-    });
-
-    // Descargar Excel desde modal
-    document.getElementById('descargarExcelModalBtn').addEventListener('click', function() {
-        descargarExcel();
-    });
-
-    // Cerrar modal
-    document.querySelector('.close').addEventListener('click', function() {
-        document.getElementById('modalEvaluaciones').style.display = 'none';
-    });
-
-    window.addEventListener('click', function(e) {
-        const modal = document.getElementById('modalEvaluaciones');
-        if (e.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
 }
 
 async function actualizarProveedores() {
     const evaluador = document.getElementById('evaluador').value;
     const tipoProveedor = document.querySelector('input[name="tipoProveedor"]:checked');
+    const anioInput = document.getElementById('anioEvaluacion');
+    const fechaSeleccionada = anioInput && anioInput.value ? new Date(anioInput.value) : null;
+    const anioEvaluacion = fechaSeleccionada ? fechaSeleccionada.getFullYear() : null;
     const selectProveedor = document.getElementById('proveedor');
     
     // Limpiar opciones
@@ -325,14 +335,26 @@ async function actualizarProveedores() {
         return;
     }
     
+    if (!anioEvaluacion || !anioInput.value) {
+        selectProveedor.innerHTML = '<option value="">-- Primero seleccione la fecha de evaluación --</option>';
+        document.getElementById('itemsSection').style.display = 'none';
+        document.getElementById('resultSection').style.display = 'none';
+        document.getElementById('correoSection').style.display = 'none';
+        document.getElementById('correoProveedor').value = '';
+        return;
+    }
+    
     if (tipoProveedor) {
         // Obtener evaluaciones guardadas
         const evaluaciones = await cargarEvaluaciones();
         
-        // Obtener proveedores ya evaluados por este evaluador y tipo
+        // Obtener proveedores ya evaluados por este evaluador, tipo y año
         const proveedoresEvaluados = new Set();
         evaluaciones.forEach(eval => {
-            if (eval.evaluador === evaluador && eval.tipo === tipoProveedor.value) {
+            const anioEval = new Date(eval.fecha).getFullYear();
+            if (eval.evaluador === evaluador && 
+                eval.tipo === tipoProveedor.value && 
+                anioEval === parseInt(anioEvaluacion)) {
                 proveedoresEvaluados.add(eval.proveedor);
             }
         });
@@ -343,11 +365,11 @@ async function actualizarProveedores() {
         if (proveedoresAsignados.length === 0) {
             selectProveedor.innerHTML = `<option value="">-- Este evaluador no tiene proveedores asignados de tipo ${tipoProveedor.value} --</option>`;
         } else {
-            // Filtrar proveedores que aún no han sido evaluados
+            // Filtrar proveedores que aún no han sido evaluados en este año
             const proveedoresDisponibles = proveedoresAsignados.filter(proveedor => !proveedoresEvaluados.has(proveedor));
             
             if (proveedoresDisponibles.length === 0) {
-                selectProveedor.innerHTML = '<option value="">-- Ya ha evaluado todos los proveedores asignados de este tipo --</option>';
+                selectProveedor.innerHTML = `<option value="">-- Ya ha evaluado todos los proveedores asignados de este tipo para el año ${anioEvaluacion} --</option>`;
             } else {
                 proveedoresDisponibles.forEach(proveedor => {
                     const option = document.createElement('option');
@@ -471,9 +493,12 @@ async function guardarEvaluacion() {
     const tipoProveedor = document.querySelector('input[name="tipoProveedor"]:checked');
     const proveedor = document.getElementById('proveedor').value;
     const correoProveedor = document.getElementById('correoProveedor').value;
+    const anioInput = document.getElementById('anioEvaluacion');
+    const fechaSeleccionada = anioInput && anioInput.value ? new Date(anioInput.value) : null;
+    const anioEvaluacion = fechaSeleccionada ? fechaSeleccionada.getFullYear() : new Date().getFullYear();
     const resultadoFinal = document.getElementById('resultadoFinal').textContent;
     
-    if (!evaluador || !tipoProveedor || !proveedor || !correoProveedor || resultadoFinal === '0%') {
+    if (!evaluador || !tipoProveedor || !proveedor || !correoProveedor || !anioInput.value || resultadoFinal === '0%') {
         alert('Por favor complete todos los campos y responda todas las preguntas.');
         return;
     }
@@ -498,6 +523,20 @@ async function guardarEvaluacion() {
         });
     });
     
+    // Usar la fecha seleccionada en el calendario para fecha_evaluacion
+    // La fecha debe ser la fecha completa del calendario, no solo el año
+    let fechaEvaluacion;
+    if (fechaSeleccionada) {
+        // Usar la fecha seleccionada en el calendario
+        fechaEvaluacion = fechaSeleccionada.toISOString();
+    } else {
+        // Si no hay fecha seleccionada, usar la fecha actual
+        fechaEvaluacion = new Date().toISOString();
+    }
+    
+    console.log('📅 Fecha de evaluación (del calendario):', fechaEvaluacion);
+    console.log('📅 Año extraído:', anioEvaluacion);
+    
     try {
         // Llamar a la función de supabase-service.js
         const evaluacionData = {
@@ -507,7 +546,8 @@ async function guardarEvaluacion() {
             correoProveedor: correoProveedor,
             respuestas: respuestasArray,
             resultadoFinal: parseFloat(resultadoFinal.replace('%', '')),
-            fecha: new Date().toISOString()
+            fechaEvaluacion: fechaEvaluacion, // Fecha del calendario para fecha_evaluacion
+            anio: anioEvaluacion // Año extraído de la fecha del calendario
         };
         
         // Usar window para asegurar que llamamos a la función global de supabase-service.js
@@ -535,6 +575,13 @@ function limpiarFormulario() {
     document.getElementById('resultSection').style.display = 'none';
     document.getElementById('correoSection').style.display = 'none';
     document.getElementById('correoProveedor').value = '';
+    
+    // Restablecer fecha actual
+    const anioInput = document.getElementById('anioEvaluacion');
+    if (anioInput) {
+        const hoy = new Date();
+        anioInput.value = hoy.toISOString().split('T')[0];
+    }
 }
 
 async function eliminarEvaluacionPorId(id) {
