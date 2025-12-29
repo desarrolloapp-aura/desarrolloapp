@@ -393,7 +393,7 @@ body {
 .proveedor-card {
     background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     border: 2px solid #e0e0e0;
-    padding: 15px 40px 15px 18px;
+    padding: 15px 45px 15px 18px;
     /* Extra padding on right for button */
     border-radius: 10px;
     display: flex;
@@ -403,6 +403,25 @@ body {
     transition: all 0.3s ease;
     position: relative;
     /* For absolute positioning of button */
+}
+
+.evaluador-nombre {
+    flex: 1;
+    padding-right: 45px;
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.proveedor-info {
+    flex: 1;
+    padding-right: 55px;
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    max-width: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .evaluador-card:hover,
@@ -416,19 +435,38 @@ body {
     background: transparent !important;
     border: none !important;
     cursor: pointer;
-    font-size: 1.2rem;
-    padding: 5px;
-    transition: transform 0.2s;
+    font-size: 1.3rem;
+    padding: 6px 0px !important;
+    transition: all 0.2s ease;
     box-shadow: none !important;
     position: absolute;
-    right: 10px;
+    right: -6px;
     top: 50%;
     transform: translateY(-50%);
+    color: #999;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    height: auto;
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.proveedor-card .btn-remove-small {
+    right: -8px;
 }
 
 .btn-remove-small:hover {
-    transform: translateY(-50%) scale(1.2);
-    /* Keep centered vertically on hover */
+    color: #dc3545;
+    opacity: 1;
+    transform: translateY(-50%) scale(1.15);
+}
+
+.btn-remove-small:active {
+    transform: translateY(-50%) scale(1);
+    opacity: 0.8;
 }
 
 
@@ -598,10 +636,24 @@ body {
 
 /* Responsiveness */
 @media (max-width: 900px) {
+    body {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        height: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
     .admin-layout {
         flex-direction: column;
         height: auto;
-        overflow: visible;
+        overflow-x: hidden !important;
+        overflow-y: visible;
+        min-height: 100vh;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .admin-sidebar {
@@ -613,6 +665,7 @@ body {
         justify-content: space-between;
         padding: 10px;
         box-sizing: border-box;
+        background: linear-gradient(180deg, #2c3e50 0%, #000000 100%) !important;
     }
 
     .sidebar-header {
@@ -627,6 +680,11 @@ body {
         padding-bottom: 0;
         border-top: 1px solid rgba(255, 255, 255, 0.1);
         width: 100%;
+    }
+
+    /* Ocultar icono del header en móviles */
+    .menu-config-mobile {
+        display: none !important;
     }
 
     .menu-item {
@@ -648,11 +706,359 @@ body {
     }
 
     .admin-main-content {
-        height: auto;
-        overflow: visible;
+        height: auto !important;
+        overflow: visible !important;
+        min-height: auto;
+        background-color: #f4f6f9 !important;
     }
 
     .content-wrapper {
-        padding: 20px;
+        padding: 15px !important;
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+        height: auto !important;
+        background-color: transparent;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
+
+    .admin-section {
+        overflow: visible;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 20px 15px !important;
+    }
+
+    /* Ajustar items en móviles */
+    .item-editor {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 12px !important;
+        gap: 12px !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+
+    .item-editor-content {
+        width: 100% !important;
+        order: 1;
+    }
+
+    .item-editor-content input.item-nombre {
+        font-size: 0.9rem !important;
+        padding: 10px !important;
+        width: 100% !important;
+    }
+
+    .item-editor-actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        width: 100% !important;
+        order: 2;
+    }
+
+    .ponderacion-container {
+        width: 100% !important;
+        justify-content: space-between !important;
+        padding: 8px 10px !important;
+        background: #f8f9fa !important;
+        border-radius: 6px !important;
+    }
+
+    .ponderacion-label {
+        font-size: 0.85rem !important;
+    }
+
+    .ponderacion-input {
+        font-size: 0.9rem !important;
+        padding: 6px !important;
+    }
+
+    /* Botón eliminar más pequeño y abajo en móviles */
+    .item-editor .btn-remove {
+        width: 100% !important;
+        padding: 8px 12px !important;
+        font-size: 0.8rem !important;
+        justify-content: center !important;
+        margin-top: 5px !important;
+    }
+
+    /* Ajustar asignaciones en móviles */
+    .asignaciones-container {
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .asignacion-card {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        padding: 20px 15px !important;
+    }
+
+    /* Ajustes para tarjetas de evaluaciones y PDFs en móviles */
+    .evaluacion-item {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 12px !important;
+        gap: 12px !important;
+    }
+
+    .evaluacion-item > div:first-child {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+
+    .evaluacion-item > div:last-child {
+        width: 100% !important;
+        justify-content: center !important;
+        flex: 0 0 auto !important;
+    }
+
+    /* Reducir tamaños de fuente en móviles - usando selectores más específicos */
+    .evaluacion-item div div div {
+        font-size: 0.85rem !important;
+        line-height: 1.4 !important;
+    }
+
+    .evaluacion-item div div div[style*="1.1rem"] {
+        font-size: 0.85rem !important;
+    }
+
+    .evaluacion-item div div div[style*="1.4rem"] {
+        font-size: 1rem !important;
+    }
+
+    .evaluacion-item div div div[style*="1rem"] {
+        font-size: 0.8rem !important;
+    }
+
+    /* Reducir padding y gaps en móviles */
+    .evaluacion-item > div > div {
+        gap: 8px !important;
+    }
+
+    .evaluacion-item > div > div > div {
+        padding: 4px 8px !important;
+        margin-bottom: 6px !important;
+    }
+
+    .evaluacion-item div[style*="padding: 20px"] {
+        padding: 8px 10px !important;
+    }
+
+    .evaluacion-item div[style*="padding: 10px 20px"] {
+        padding: 6px 10px !important;
+    }
+
+    .evaluacion-item div[style*="padding: 8px 15px"] {
+        padding: 5px 8px !important;
+    }
+
+    .evaluacion-item div[style*="padding: 5px 12px"] {
+        padding: 4px 6px !important;
+    }
+
+    /* Ajustar botones en móviles */
+    .evaluacion-item button,
+    .evaluacion-item .btn-add {
+        width: 100% !important;
+        padding: 10px 12px !important;
+        font-size: 0.85rem !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        min-width: auto !important;
+    }
+
+    /* Hacer que los elementos se apilen verticalmente en móviles */
+    .evaluacion-item > div > div[style*="flex-direction: column"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .evaluacion-item > div > div[style*="flex-wrap: wrap"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        flex-wrap: nowrap !important;
+    }
+
+    .evaluacion-item > div > div > div {
+        width: 100% !important;
+        flex: 0 0 auto !important;
+        margin-bottom: 6px !important;
+    }
+
+    /* Ajustar badges y etiquetas */
+    .evaluacion-item div[style*="border-radius: 6px"],
+    .evaluacion-item div[style*="border-radius: 10px"] {
+        padding: 4px 8px !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Grid de evaluadores y proveedores: 2 columnas en móviles */
+    .evaluadores-grid,
+    .proveedores-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Ajustar tamaño de las tarjetas en móviles */
+    .evaluador-card,
+    .proveedor-card {
+        padding: 10px 45px 10px 10px !important;
+        font-size: 0.85rem !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+
+    /* Ajustar botón de eliminar en móviles */
+    .evaluador-card .btn-remove-small {
+        font-size: 1.1rem !important;
+        padding: 5px 0px !important;
+        right: -8px !important;
+    }
+
+    .proveedor-card .btn-remove-small {
+        font-size: 1.1rem !important;
+        padding: 5px 0px !important;
+        right: -10px !important;
+    }
+
+    /* Asegurar que el texto no toque el icono en móviles */
+    .evaluador-nombre {
+        padding-right: 40px !important;
+        max-width: none !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important;
+    }
+
+    .proveedor-info {
+        padding-right: 45px !important;
+        max-width: none !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important;
+    }
+
+    /* Menú de configuración móvil */
+    .main-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        position: relative !important;
+    }
+
+    .menu-config-mobile {
+        display: block !important;
+        background: transparent !important;
+        color: #667eea !important;
+        border: none !important;
+        font-size: 1.8rem !important;
+        cursor: pointer !important;
+        padding: 5px 10px !important;
+        transition: all 0.2s ease !important;
+        flex-shrink: 0 !important;
+    }
+
+    .menu-config-mobile:hover,
+    .menu-config-mobile:active {
+        opacity: 0.7 !important;
+        transform: scale(1.1) !important;
+    }
+
+    .menu-config-mobile-dropdown {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 20px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        right: auto !important;
+        z-index: 999 !important;
+        background: white !important;
+        border-radius: 12px !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2) !important;
+        min-width: 250px !important;
+        max-width: 90% !important;
+        overflow: hidden !important;
+        animation: slideDownMenu 0.3s ease-out !important;
+    }
+
+    @keyframes slideDownMenu {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .menu-config-item {
+        display: block !important;
+        width: 100% !important;
+        padding: 15px 20px !important;
+        border: none !important;
+        background: white !important;
+        color: #333 !important;
+        text-align: left !important;
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+    }
+
+    .menu-config-item:last-child {
+        border-bottom: none !important;
+    }
+
+    .menu-config-item:hover,
+    .menu-config-item:active {
+        background: #f8f9fa !important;
+        color: #667eea !important;
+    }
+
+    .menu-config-item:first-child {
+        color: #28a745 !important;
+    }
+
+    .menu-config-item:first-child:hover {
+        background: #28a745 !important;
+        color: white !important;
+    }
+
+    .menu-config-item:last-child {
+        color: #dc3545 !important;
+    }
+
+    .menu-config-item:last-child:hover {
+        background: #dc3545 !important;
+        color: white !important;
+    }
+}
+
+/* Ocultar menú móvil en desktop */
+.menu-config-mobile {
+    display: none;
+}
+
+.menu-config-mobile-dropdown {
+    display: none;
 }

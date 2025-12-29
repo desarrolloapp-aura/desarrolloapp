@@ -1,5 +1,10 @@
 // Funciones para generar PDFs de evaluaciones
 
+// Función helper para detectar si es móvil
+function esMovil() {
+    return window.innerWidth <= 900;
+}
+
 // Inicializar sección de PDFs
 async function inicializarPDFs() {
     try {
@@ -109,7 +114,13 @@ function mostrarPDFsPorAnio(anio, todasEvaluaciones) {
     evaluacionesAnio.forEach(eval => {
         const div = document.createElement('div');
         div.className = 'evaluacion-item';
-        div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 20px; margin-bottom: 15px; background: white; border: 2px solid #e0e0e0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);';
+        const esMobile = esMovil();
+        // Ajustar estilos según si es móvil
+        if (esMobile) {
+            div.style.cssText = 'display: flex; flex-direction: column; align-items: stretch; padding: 12px; margin-bottom: 15px; background: white; border: 2px solid #e0e0e0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);';
+        } else {
+            div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 20px; margin-bottom: 15px; background: white; border: 2px solid #e0e0e0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);';
+        }
         
         const infoDiv = document.createElement('div');
         infoDiv.style.flex = '1';
@@ -120,24 +131,34 @@ function mostrarPDFsPorAnio(anio, todasEvaluaciones) {
         const resultado = eval.resultado_final || eval.resultadoFinal || 0;
         const anio = eval.anio || new Date(eval.fechaEvaluacion || eval.fecha || Date.now()).getFullYear();
         
+        // Ajustar estilos según si es móvil
+        const fontSizePrincipal = esMobile ? '0.85rem' : '1.1rem';
+        const fontSizeResultado = esMobile ? '1rem' : '1.4rem';
+        const gapPrincipal = esMobile ? '8px' : '20px';
+        const gapSecundario = esMobile ? '6px' : '10px';
+        const paddingPrincipal = esMobile ? '4px 8px' : '5px 12px';
+        const paddingResultado = esMobile ? '6px 10px' : '10px 20px';
+        const flexDirection = esMobile ? 'column' : 'row';
+        const alignItems = esMobile ? 'stretch' : 'center';
+        
         infoDiv.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                    <div style="font-size: 1.1rem; font-weight: 700; color: #2c3e50;">
+            <div style="display: flex; flex-direction: column; gap: ${gapSecundario};">
+                <div style="display: flex; flex-direction: ${flexDirection}; align-items: ${alignItems}; gap: ${gapPrincipal}; flex-wrap: wrap;">
+                    <div style="font-size: ${fontSizePrincipal}; font-weight: 700; color: #2c3e50;">
                         👤 <strong>Evaluador:</strong> ${evaluador}
                     </div>
-                    <div style="font-size: 1.1rem; font-weight: 700; color: #667eea;">
+                    <div style="font-size: ${fontSizePrincipal}; font-weight: 700; color: #667eea;">
                         🏢 <strong>Proveedor:</strong> ${proveedor}
                     </div>
-                    <div style="font-size: 1.1rem; font-weight: 700; color: ${tipo === 'PRODUCTO' ? '#4A90E2' : '#50C878'};">
+                    <div style="font-size: ${fontSizePrincipal}; font-weight: 700; color: ${tipo === 'PRODUCTO' ? '#4A90E2' : '#50C878'};">
                         ${tipo === 'PRODUCTO' ? '🟦' : '🟩'} <strong>Tipo:</strong> ${tipo}
                     </div>
-                    <div style="font-size: 1.1rem; font-weight: 700; color: #ff6b35; background: rgba(255, 107, 53, 0.1); padding: 5px 12px; border-radius: 6px;">
+                    <div style="font-size: ${fontSizePrincipal}; font-weight: 700; color: #ff6b35; background: rgba(255, 107, 53, 0.1); padding: ${paddingPrincipal}; border-radius: 6px;">
                         📅 <strong>Año:</strong> ${anio}
                     </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                    <div style="font-size: 1.4rem; font-weight: 800; color: #28a745; background: rgba(40, 167, 69, 0.15); padding: 10px 20px; border-radius: 10px; border: 2px solid #28a745;">
+                <div style="display: flex; flex-direction: ${flexDirection}; align-items: ${alignItems}; gap: ${gapPrincipal}; flex-wrap: wrap;">
+                    <div style="font-size: ${fontSizeResultado}; font-weight: 800; color: #28a745; background: rgba(40, 167, 69, 0.15); padding: ${paddingResultado}; border-radius: 10px; border: 2px solid #28a745;">
                         📊 <strong>Resultado Final:</strong> ${parseFloat(resultado).toFixed(2)}%
                     </div>
                 </div>
@@ -145,11 +166,19 @@ function mostrarPDFsPorAnio(anio, todasEvaluaciones) {
         `;
         
         const botonesDiv = document.createElement('div');
-        botonesDiv.style.cssText = 'display: flex; gap: 10px; align-items: center; flex-shrink: 0;';
+        if (esMobile) {
+            botonesDiv.style.cssText = 'display: flex; flex-direction: column; gap: 8px; width: 100%;';
+        } else {
+            botonesDiv.style.cssText = 'display: flex; gap: 10px; align-items: center; flex-shrink: 0;';
+        }
         
         const btnDescargarPDF = document.createElement('button');
         btnDescargarPDF.className = 'btn-add';
-        btnDescargarPDF.style.cssText = 'background: #dc3545; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; white-space: nowrap; min-width: fit-content;';
+        if (esMobile) {
+            btnDescargarPDF.style.cssText = 'background: #dc3545; color: white; border: none; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; width: 100%; white-space: normal;';
+        } else {
+            btnDescargarPDF.style.cssText = 'background: #dc3545; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; white-space: nowrap; min-width: fit-content;';
+        }
         btnDescargarPDF.innerHTML = '📄 Generar PDF';
         btnDescargarPDF.onclick = () => generarPDFIndividual(eval);
         

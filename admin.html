@@ -48,7 +48,7 @@
                 <li class="menu-item" data-target="section-asignaciones">🔗 Asignaciones</li>
                 <li class="menu-item" data-target="section-evaluaciones">📋 Evaluaciones Guardadas</li>
                 <li class="menu-item" data-target="section-pdfs">📄 Generar PDFs</li>
-                <li class="menu-item" data-target="section-configuracion">⚙️ Configuración</li>
+                <li class="menu-item menu-item-config-mobile" data-target="section-configuracion">⚙️ Configuración</li>
             </ul>
             <div class="sidebar-footer">
                 <button id="guardarConfigBtnSidebar" class="btn-save-sidebar">💾 Guardar Todo</button>
@@ -62,6 +62,13 @@
                 <h1 id="headerTitle">Información General</h1>
                 <p>Gestiona la configuración del sistema de evaluación</p>
             </header>
+            
+            <!-- Menú desplegable móvil -->
+            <div id="menuConfigMobileDropdown" class="menu-config-mobile-dropdown" style="display: none;">
+                <button id="guardarTodoMobile" class="menu-config-item">💾 Guardar Todo</button>
+                <button id="cambiarPasswordMobile" class="menu-config-item">🔐 Cambiar Contraseña</button>
+                <button id="cerrarSesionMobile" class="menu-config-item">🚪 Cerrar Sesión</button>
+            </div>
 
             <div class="content-wrapper">
                 <!-- Sección: Información General -->
@@ -214,6 +221,111 @@
 
     <script src="js/admin.js"></script>
     <script>
+        // Script para manejar el menú móvil de configuración
+        document.addEventListener('DOMContentLoaded', function () {
+            const menuConfigDropdown = document.getElementById('menuConfigMobileDropdown');
+            const guardarTodoMobile = document.getElementById('guardarTodoMobile');
+            const cambiarPasswordMobile = document.getElementById('cambiarPasswordMobile');
+            const cerrarSesionMobile = document.getElementById('cerrarSesionMobile');
+
+            // Cerrar menú al hacer clic fuera
+            if (menuConfigDropdown) {
+                document.addEventListener('click', function(e) {
+                    if (!menuConfigDropdown.contains(e.target)) {
+                        const configMenuItem = document.querySelector('.menu-item-config-mobile');
+                        if (configMenuItem && !configMenuItem.contains(e.target)) {
+                            menuConfigDropdown.style.display = 'none';
+                        }
+                    }
+                });
+            }
+
+            // Guardar Todo
+            if (guardarTodoMobile) {
+                guardarTodoMobile.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    menuConfigDropdown.style.display = 'none';
+                    
+                    // Esperar a que las funciones estén disponibles
+                    setTimeout(function() {
+                        if (typeof guardarConfiguracionCompleta === 'function') {
+                            guardarConfiguracionCompleta();
+                        } else if (typeof guardarConfiguracion === 'function') {
+                            guardarConfiguracion();
+                        } else {
+                            // Intentar usar el botón del sidebar si existe
+                            const guardarBtnSidebar = document.getElementById('guardarConfigBtnSidebar');
+                            if (guardarBtnSidebar) {
+                                guardarBtnSidebar.click();
+                            } else {
+                                alert('⚠️ La función de guardar no está disponible. Por favor, recarga la página.');
+                            }
+                        }
+                    }, 200);
+                });
+            }
+
+            // Cambiar Contraseña - ir a sección de configuración
+            if (cambiarPasswordMobile) {
+                cambiarPasswordMobile.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    menuConfigDropdown.style.display = 'none';
+                    
+                    // Activar sección de configuración
+                    setTimeout(function() {
+                        const menuItems = document.querySelectorAll('.menu-item');
+                        const sections = document.querySelectorAll('.admin-section');
+                        const headerTitle = document.getElementById('headerTitle');
+                        
+                        // Ocultar todas las secciones
+                        sections.forEach(section => {
+                            section.style.display = 'none';
+                            section.classList.remove('active-section');
+                        });
+                        
+                        // Mostrar sección de configuración
+                        const configSection = document.getElementById('section-configuracion');
+                        if (configSection) {
+                            configSection.style.display = 'block';
+                            configSection.classList.add('active-section');
+                        }
+                        
+                        // Actualizar menú activo
+                        menuItems.forEach(item => {
+                            item.classList.remove('active');
+                            if (item.getAttribute('data-target') === 'section-configuracion') {
+                                item.classList.add('active');
+                            }
+                        });
+                        
+                        // Actualizar título
+                        if (headerTitle) {
+                            headerTitle.textContent = '⚙️ Configuración';
+                        }
+                        
+                        // Scroll al inicio
+                        window.scrollTo(0, 0);
+                    }, 200);
+                });
+            }
+
+            // Cerrar Sesión
+            if (cerrarSesionMobile) {
+                cerrarSesionMobile.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    menuConfigDropdown.style.display = 'none';
+                    
+                    // Cerrar sesión directamente (sin confirmación adicional, el botón del sidebar ya tiene una)
+                    sessionStorage.removeItem('adminAuthenticated');
+                    sessionStorage.removeItem('adminAuthTime');
+                    window.location.href = 'login-admin.html';
+                });
+            }
+        });
+
         // Script para manejar la navegación del sidebar
         document.addEventListener('DOMContentLoaded', function () {
             const menuItems = document.querySelectorAll('.menu-item');
@@ -253,8 +365,21 @@
 
             // Event listeners para el menú
             menuItems.forEach(item => {
-                item.addEventListener('click', function () {
+                item.addEventListener('click', function (e) {
                     const target = this.getAttribute('data-target');
+                    
+                    // En móviles, si es el item de configuración, abrir el menú desplegable
+                    if (target === 'section-configuracion' && window.innerWidth <= 900) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const menuConfigDropdown = document.getElementById('menuConfigMobileDropdown');
+                        if (menuConfigDropdown) {
+                            const isVisible = menuConfigDropdown.style.display === 'block';
+                            menuConfigDropdown.style.display = isVisible ? 'none' : 'block';
+                            return false; // No cambiar de sección
+                        }
+                    }
+                    
                     // Obtener texto del título (sin el icono si se prefiere)
                     let title = this.textContent;
                     switchSection(target, title);

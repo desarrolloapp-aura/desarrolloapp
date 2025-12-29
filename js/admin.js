@@ -1,5 +1,10 @@
 // Panel de Administración - Sistema de Evaluación de Proveedores
 
+// Función helper para detectar si es móvil
+function esMovil() {
+    return window.innerWidth <= 900;
+}
+
 // Valores por defecto (debe estar antes de cargarConfiguracion)
 const configuracionDefault = {
     titulo: 'Evaluación de Proveedores',
@@ -1228,7 +1233,12 @@ function mostrarEvaluacionesPorAnio(anio, todasEvaluaciones) {
     evaluacionesAnio.forEach(eval => {
             const div = document.createElement('div');
             div.className = 'evaluacion-item';
-            div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 20px; margin-bottom: 15px; background: white; border: 2px solid #e0e0e0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);';
+            // Ajustar estilos según si es móvil
+            if (esMovil()) {
+                div.style.cssText = 'display: flex; flex-direction: column; align-items: stretch; padding: 12px; margin-bottom: 15px; background: white; border: 2px solid #e0e0e0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);';
+            } else {
+                div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 20px; margin-bottom: 15px; background: white; border: 2px solid #e0e0e0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);';
+            }
             
             const infoDiv = document.createElement('div');
             infoDiv.style.flex = '1';
@@ -1289,33 +1299,45 @@ function mostrarEvaluacionesPorAnio(anio, todasEvaluaciones) {
             const resultado = eval.resultado_final || eval.resultadoFinal || 0;
             const anio = eval.anio || new Date(eval.fecha || Date.now()).getFullYear();
             
-            // Crear estructura más clara
+            // Crear estructura más clara - ajustar estilos según si es móvil
+            const esMobile = esMovil();
+            const fontSizePrincipal = esMobile ? '0.85rem' : '1.1rem';
+            const fontSizeResultado = esMobile ? '1rem' : '1.4rem';
+            const fontSizeFechas = esMobile ? '0.8rem' : '1rem';
+            const gapPrincipal = esMobile ? '8px' : '20px';
+            const gapSecundario = esMobile ? '6px' : '10px';
+            const paddingPrincipal = esMobile ? '4px 8px' : '5px 12px';
+            const paddingResultado = esMobile ? '6px 10px' : '10px 20px';
+            const paddingFechas = esMobile ? '5px 8px' : '8px 15px';
+            const flexDirection = esMobile ? 'column' : 'row';
+            const alignItems = esMobile ? 'stretch' : 'center';
+            
             infoDiv.innerHTML = `
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                        <div style="font-size: 1.1rem; font-weight: 700; color: #2c3e50;">
+                <div style="display: flex; flex-direction: column; gap: ${gapSecundario};">
+                    <div style="display: flex; flex-direction: ${flexDirection}; align-items: ${alignItems}; gap: ${gapPrincipal}; flex-wrap: wrap;">
+                        <div style="font-size: ${fontSizePrincipal}; font-weight: 700; color: #2c3e50;">
                             👤 <strong>Evaluador:</strong> ${evaluador}
                         </div>
-                        <div style="font-size: 1.1rem; font-weight: 700; color: #667eea;">
+                        <div style="font-size: ${fontSizePrincipal}; font-weight: 700; color: #667eea;">
                             🏢 <strong>Proveedor:</strong> ${proveedor}
                         </div>
-                        <div style="font-size: 1.1rem; font-weight: 700; color: ${tipo === 'PRODUCTO' ? '#4A90E2' : '#50C878'};">
+                        <div style="font-size: ${fontSizePrincipal}; font-weight: 700; color: ${tipo === 'PRODUCTO' ? '#4A90E2' : '#50C878'};">
                             ${tipo === 'PRODUCTO' ? '🟦' : '🟩'} <strong>Tipo:</strong> ${tipo}
                         </div>
-                        <div style="font-size: 1.1rem; font-weight: 700; color: #ff6b35; background: rgba(255, 107, 53, 0.1); padding: 5px 12px; border-radius: 6px;">
+                        <div style="font-size: ${fontSizePrincipal}; font-weight: 700; color: #ff6b35; background: rgba(255, 107, 53, 0.1); padding: ${paddingPrincipal}; border-radius: 6px;">
                             📅 <strong>Año:</strong> ${anio}
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                        <div style="font-size: 1.4rem; font-weight: 800; color: #28a745; background: rgba(40, 167, 69, 0.15); padding: 10px 20px; border-radius: 10px; border: 2px solid #28a745;">
+                    <div style="display: flex; flex-direction: ${flexDirection}; align-items: ${alignItems}; gap: ${gapPrincipal}; flex-wrap: wrap;">
+                        <div style="font-size: ${fontSizeResultado}; font-weight: 800; color: #28a745; background: rgba(40, 167, 69, 0.15); padding: ${paddingResultado}; border-radius: 10px; border: 2px solid #28a745;">
                             📊 <strong>Resultado Final:</strong> ${parseFloat(resultado).toFixed(2)}%
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
-                        <div style="color: #667eea; font-size: 1rem; font-weight: 600; background: rgba(102, 126, 234, 0.1); padding: 8px 15px; border-radius: 6px;">
+                    <div style="display: flex; flex-direction: ${flexDirection}; align-items: ${alignItems}; gap: ${gapPrincipal}; flex-wrap: wrap; margin-top: ${esMobile ? '6px' : '10px'};">
+                        <div style="color: #667eea; font-size: ${fontSizeFechas}; font-weight: 600; background: rgba(102, 126, 234, 0.1); padding: ${paddingFechas}; border-radius: 6px;">
                             📅 <strong>Fecha Evaluación:</strong> ${fechaEvaluacionFormateada || 'No disponible'}
                         </div>
-                        <div style="color: #666; font-size: 1rem; font-weight: 500; background: rgba(0, 0, 0, 0.05); padding: 8px 15px; border-radius: 6px;">
+                        <div style="color: #666; font-size: ${fontSizeFechas}; font-weight: 500; background: rgba(0, 0, 0, 0.05); padding: ${paddingFechas}; border-radius: 6px;">
                             💾 <strong>Guardado:</strong> ${fechaGuardadoFormateada || 'No disponible'}
                         </div>
                     </div>
@@ -1324,12 +1346,20 @@ function mostrarEvaluacionesPorAnio(anio, todasEvaluaciones) {
             
             // Contenedor de botones
             const botonesDiv = document.createElement('div');
-            botonesDiv.style.cssText = 'display: flex; gap: 10px; align-items: center; flex-shrink: 0;';
+            if (esMobile) {
+                botonesDiv.style.cssText = 'display: flex; flex-direction: column; gap: 8px; width: 100%;';
+            } else {
+                botonesDiv.style.cssText = 'display: flex; gap: 10px; align-items: center; flex-shrink: 0;';
+            }
             
             // Botón descargar individual
             const btnDescargar = document.createElement('button');
             btnDescargar.className = 'btn-add';
-            btnDescargar.style.cssText = 'background: #667eea; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; white-space: nowrap; min-width: fit-content;';
+            if (esMobile) {
+                btnDescargar.style.cssText = 'background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; width: 100%; white-space: normal;';
+            } else {
+                btnDescargar.style.cssText = 'background: #667eea; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; white-space: nowrap; min-width: fit-content;';
+            }
             btnDescargar.innerHTML = '📥 Descargar Excel';
             btnDescargar.onclick = function() {
                 descargarEvaluacionIndividualAdmin(eval);
@@ -1338,7 +1368,11 @@ function mostrarEvaluacionesPorAnio(anio, todasEvaluaciones) {
             // Botón eliminar
             const btnEliminar = document.createElement('button');
             btnEliminar.className = 'btn-remove';
-            btnEliminar.style.cssText = 'white-space: nowrap;';
+            if (esMobile) {
+                btnEliminar.style.cssText = 'white-space: normal; width: 100%; padding: 10px 12px; font-size: 0.85rem;';
+            } else {
+                btnEliminar.style.cssText = 'white-space: nowrap;';
+            }
             btnEliminar.textContent = '🗑️ Eliminar';
             btnEliminar.onclick = function() {
                 eliminarEvaluacionPorIdAdmin(eval.id);
