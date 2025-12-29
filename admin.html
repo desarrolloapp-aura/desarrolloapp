@@ -88,6 +88,59 @@
                         <textarea id="objetivoEvaluacion" rows="3"
                             placeholder="Medir y mejorar continuamente..."></textarea>
                     </div>
+                    
+                    <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid #e0e0e0;">
+                        <h3 style="margin-bottom: 20px; color: #333;">📅 Configuración de Fechas de la Encuesta</h3>
+                        
+                        <div class="form-group">
+                            <label>Año de la Encuesta:</label>
+                            <input type="number" id="anioEncuesta" min="2020" max="2100"
+                                placeholder="2025" style="width: 200px;">
+                            <small style="display: block; color: #666; margin-top: 5px;">
+                                Define el año al que corresponde esta encuesta (no se pueden seleccionar años anteriores al actual)
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Fecha de Inicio (Desde):</label>
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <input type="date" id="fechaInicioEncuesta" style="width: 200px;">
+                                <input type="time" id="horaInicioEncuesta" style="width: 150px;">
+                            </div>
+                            <small style="display: block; color: #666; margin-top: 5px;">
+                                Fecha y hora desde la cual la encuesta estará disponible para los evaluadores
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Fecha de Fin (Hasta):</label>
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <input type="date" id="fechaFinEncuesta" style="width: 200px;">
+                                <input type="time" id="horaFinEncuesta" style="width: 150px;">
+                            </div>
+                            <small style="display: block; color: #666; margin-top: 5px;">
+                                Fecha y hora hasta la cual la encuesta estará disponible para los evaluadores
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Zona Horaria:</label>
+                            <select id="zonaHorariaEncuesta" style="width: 200px;">
+                                <option value="America/Santiago">Chile (Santiago) - UTC-3</option>
+                                <option value="America/Mexico_City">México (Ciudad de México) - UTC-6</option>
+                                <option value="America/Bogota">Colombia (Bogotá) - UTC-5</option>
+                                <option value="America/Lima">Perú (Lima) - UTC-5</option>
+                                <option value="America/Buenos_Aires">Argentina (Buenos Aires) - UTC-3</option>
+                                <option value="America/Caracas">Venezuela (Caracas) - UTC-4</option>
+                                <option value="UTC">UTC (Coordinated Universal Time)</option>
+                            </select>
+                            <small style="display: block; color: #666; margin-top: 5px;">
+                                Seleccione la zona horaria para las fechas de inicio y fin
+                            </small>
+                        </div>
+                        
+                        <div id="mensajeFechas" style="display: none; padding: 10px; margin-top: 15px; border-radius: 5px;"></div>
+                    </div>
                 </section>
 
                 <!-- Sección: Ítems de PRODUCTO -->
@@ -242,27 +295,23 @@
 
             // Guardar Todo
             if (guardarTodoMobile) {
-                guardarTodoMobile.addEventListener('click', function(e) {
+                guardarTodoMobile.addEventListener('click', async function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     menuConfigDropdown.style.display = 'none';
+                    console.log('💾 Botón guardar móvil clickeado');
                     
-                    // Esperar a que las funciones estén disponibles
-                    setTimeout(function() {
+                    try {
                         if (typeof guardarConfiguracionCompleta === 'function') {
-                            guardarConfiguracionCompleta();
-                        } else if (typeof guardarConfiguracion === 'function') {
-                            guardarConfiguracion();
+                            await guardarConfiguracionCompleta();
                         } else {
-                            // Intentar usar el botón del sidebar si existe
-                            const guardarBtnSidebar = document.getElementById('guardarConfigBtnSidebar');
-                            if (guardarBtnSidebar) {
-                                guardarBtnSidebar.click();
-                            } else {
-                                alert('⚠️ La función de guardar no está disponible. Por favor, recarga la página.');
-                            }
+                            console.error('La función guardarConfiguracionCompleta no está definida');
+                            alert('Error: No se pudo guardar la configuración. Por favor, recargue la página.');
                         }
-                    }, 200);
+                    } catch (error) {
+                        console.error('Error al guardar desde móvil:', error);
+                        alert('Error al guardar: ' + (error.message || 'Error desconocido'));
+                    }
                 });
             }
 
@@ -389,16 +438,20 @@
             // Vincular el botón de guardar del sidebar al botón original (que puede estar oculto o lo usamos directamente)
             const guardarBtnSidebar = document.getElementById('guardarConfigBtnSidebar');
             if (guardarBtnSidebar) {
-                guardarBtnSidebar.addEventListener('click', function () {
-                    if (typeof guardarConfiguracion === 'function') {
-                        guardarConfiguracion();
-                    } else if (typeof guardarConfiguracionCompleta === 'function') {
-                        guardarConfiguracionCompleta();
-                    } else {
-                        console.error('La función guardarConfiguracion no está definida');
-                        // Intento de fallback a clickear el botón original si existe
-                        const originalBtn = document.getElementById('guardarConfigBtn');
-                        if (originalBtn) originalBtn.click();
+                guardarBtnSidebar.addEventListener('click', async function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('💾 Botón guardar sidebar clickeado');
+                    try {
+                        if (typeof guardarConfiguracionCompleta === 'function') {
+                            await guardarConfiguracionCompleta();
+                        } else {
+                            console.error('La función guardarConfiguracionCompleta no está definida');
+                            alert('Error: No se pudo guardar la configuración. Por favor, recargue la página.');
+                        }
+                    } catch (error) {
+                        console.error('Error al guardar desde sidebar:', error);
+                        alert('Error al guardar: ' + (error.message || 'Error desconocido'));
                     }
                 });
             }

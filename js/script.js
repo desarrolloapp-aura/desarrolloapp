@@ -192,6 +192,69 @@ function mostrarPaso(paso) {
 }
 
 function siguientePaso() {
+    // Verificar si la encuesta está disponible (solo en paso 0)
+    if (pasoActual === 0) {
+        const ahora = new Date();
+        const fechaInicio = configEvaluacion?.fechaInicioEncuesta ? new Date(configEvaluacion.fechaInicioEncuesta) : null;
+        const fechaFin = configEvaluacion?.fechaFinEncuesta ? new Date(configEvaluacion.fechaFinEncuesta) : null;
+        
+        let fueraDeRango = false;
+        let mensaje = '';
+        
+        if (fechaInicio && fechaFin) {
+            if (ahora < fechaInicio) {
+                fueraDeRango = true;
+                const fechaInicioFormateada = fechaInicio.toLocaleString('es-ES', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                mensaje = `La encuesta estará disponible a partir del ${fechaInicioFormateada}.`;
+            } else if (ahora > fechaFin) {
+                fueraDeRango = true;
+                const fechaFinFormateada = fechaFin.toLocaleString('es-ES', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                mensaje = `La encuesta ya no está disponible. El período de evaluación finalizó el ${fechaFinFormateada}.`;
+            }
+        } else if (fechaInicio) {
+            if (ahora < fechaInicio) {
+                fueraDeRango = true;
+                const fechaInicioFormateada = fechaInicio.toLocaleString('es-ES', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                mensaje = `La encuesta estará disponible a partir del ${fechaInicioFormateada}.`;
+            }
+        } else if (fechaFin) {
+            if (ahora > fechaFin) {
+                fueraDeRango = true;
+                const fechaFinFormateada = fechaFin.toLocaleString('es-ES', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                mensaje = `La encuesta ya no está disponible. El período de evaluación finalizó el ${fechaFinFormateada}.`;
+            }
+        }
+        
+        if (fueraDeRango) {
+            alert(`⚠️ ${mensaje}`);
+            return;
+        }
+    }
+    
     // Validar paso actual antes de avanzar
     if (!validarPasoActual()) {
         return;
@@ -320,15 +383,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Cargar configuración
         const configDesdeBD = await cargarConfiguracionEvaluacionLocal();
         
-        // Solo actualizar si hay cambios o si no tenemos datos
-        if (configDesdeBD && (JSON.stringify(configDesdeBD) !== JSON.stringify(configEvaluacion) || !configEvaluacion.titulo)) {
-            configEvaluacion = configDesdeBD;
+        // Actualizar configEvaluacion con los datos de la BD (siempre, para asegurar que las fechas se carguen)
+        if (configDesdeBD) {
+            configEvaluacion = { ...configEvaluacion, ...configDesdeBD };
             itemsProducto = configEvaluacion.itemsProducto || [];
             itemsServicio = configEvaluacion.itemsServicio || [];
             
             // Actualizar la información solo si hubo cambios
-            actualizarInformacionDesdeConfig();
+            if (JSON.stringify(configDesdeBD) !== JSON.stringify(configEvaluacion) || !configEvaluacion.titulo) {
+                actualizarInformacionDesdeConfig();
+            }
         }
+        
+        // Verificar rango de fechas después de cargar la configuración
+        // Esperar un poco más para asegurar que configEvaluacion esté actualizado
+        setTimeout(() => {
+            console.log('📅 Verificando rango de fechas...', {
+                fechaInicio: configEvaluacion?.fechaInicioEncuesta,
+                fechaFin: configEvaluacion?.fechaFinEncuesta,
+                configEvaluacion: configEvaluacion
+            });
+            verificarRangoFechas();
+        }, 300);
         
         // Cargar asignaciones y evaluadores
         asignacionProveedores = await cargarAsignacionProveedores();
@@ -405,6 +481,139 @@ function actualizarInformacionDesdeConfig() {
     
     // Actualizar lista de criterios dinámicamente
     actualizarCriteriosEnHTML();
+}
+
+// Función para verificar si la fecha actual está dentro del rango configurado
+function verificarRangoFechas() {
+    const mensajeDiv = document.getElementById('mensajeRangoFechas');
+    const mensajeTexto = document.getElementById('mensajeRangoTexto');
+    const form = document.getElementById('evaluationForm');
+    
+    if (!mensajeDiv || !configEvaluacion) return;
+    
+    const ahora = new Date();
+    const fechaInicio = configEvaluacion.fechaInicioEncuesta ? new Date(configEvaluacion.fechaInicioEncuesta) : null;
+    const fechaFin = configEvaluacion.fechaFinEncuesta ? new Date(configEvaluacion.fechaFinEncuesta) : null;
+    
+    if (!fechaInicio && !fechaFin) {
+        mensajeDiv.style.display = 'none';
+        if (form) {
+            form.style.pointerEvents = 'auto';
+            form.style.opacity = '1';
+        }
+        return;
+    }
+    
+    let fueraDeRango = false;
+    let mensaje = '';
+    let tipoMensaje = 'info';
+    
+    const formatearFecha = (fecha) => {
+        return fecha.toLocaleString('es-ES', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+    
+    if (fechaInicio && fechaFin) {
+        if (ahora < fechaInicio) {
+            fueraDeRango = true;
+            tipoMensaje = 'warning';
+            mensaje = `La encuesta estará disponible desde el ${formatearFecha(fechaInicio)} hasta el ${formatearFecha(fechaFin)}.`;
+        } else if (ahora > fechaFin) {
+            fueraDeRango = true;
+            tipoMensaje = 'error';
+            mensaje = `La encuesta ya no está disponible. El período de evaluación finalizó el ${formatearFecha(fechaFin)}.`;
+        } else {
+            tipoMensaje = 'info';
+            mensaje = `La encuesta está disponible desde el ${formatearFecha(fechaInicio)} hasta el ${formatearFecha(fechaFin)}.`;
+        }
+    } else if (fechaInicio) {
+        if (ahora < fechaInicio) {
+            fueraDeRango = true;
+            tipoMensaje = 'warning';
+            mensaje = `La encuesta estará disponible a partir del ${formatearFecha(fechaInicio)}.`;
+        } else {
+            tipoMensaje = 'info';
+            mensaje = `La encuesta está disponible desde el ${formatearFecha(fechaInicio)}.`;
+        }
+    } else if (fechaFin) {
+        if (ahora > fechaFin) {
+            fueraDeRango = true;
+            tipoMensaje = 'error';
+            mensaje = `La encuesta ya no está disponible. El período de evaluación finalizó el ${formatearFecha(fechaFin)}.`;
+        } else {
+            tipoMensaje = 'info';
+            mensaje = `La encuesta estará disponible hasta el ${formatearFecha(fechaFin)}.`;
+        }
+    }
+    
+    mensajeDiv.style.display = 'block';
+    if (mensajeTexto) mensajeTexto.innerHTML = mensaje;
+    
+    const tituloMensaje = document.getElementById('mensajeRangoTitulo');
+    if (tituloMensaje) {
+        if (tipoMensaje === 'error') {
+            tituloMensaje.textContent = 'La encuesta no está disponible';
+        } else if (tipoMensaje === 'warning') {
+            tituloMensaje.textContent = 'La encuesta aún no está disponible';
+        } else {
+            tituloMensaje.textContent = 'Período de evaluación';
+        }
+    }
+    
+    const icono = mensajeDiv.querySelector('.mensaje-icono');
+    if (tipoMensaje === 'error') {
+        mensajeDiv.style.background = 'linear-gradient(135deg, #fee 0%, #fcc 100%)';
+        mensajeDiv.style.borderColor = '#f33';
+        if (icono) icono.textContent = '❌';
+        if (tituloMensaje) tituloMensaje.style.color = '#c33';
+        if (mensajeTexto) mensajeTexto.style.color = '#c33';
+    } else if (tipoMensaje === 'warning') {
+        mensajeDiv.style.background = 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)';
+        mensajeDiv.style.borderColor = '#ffc107';
+        if (icono) icono.textContent = '⚠️';
+        if (tituloMensaje) tituloMensaje.style.color = '#856404';
+        if (mensajeTexto) mensajeTexto.style.color = '#856404';
+    } else {
+        mensajeDiv.style.background = 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)';
+        mensajeDiv.style.borderColor = '#10b981';
+        if (icono) icono.textContent = 'ℹ️';
+        if (tituloMensaje) tituloMensaje.style.color = '#065f46';
+        if (mensajeTexto) mensajeTexto.style.color = '#065f46';
+    }
+    
+    // Deshabilitar/habilitar botón "Comenzar" y bloquear formulario
+    const btnComenzar = document.querySelector('button[onclick="siguientePaso()"]');
+    
+    if (fueraDeRango) {
+        if (form) {
+            form.style.pointerEvents = 'none';
+            form.style.opacity = '0.6';
+        }
+        // Deshabilitar botón "Comenzar"
+        if (btnComenzar) {
+            btnComenzar.disabled = true;
+            btnComenzar.style.opacity = '0.5';
+            btnComenzar.style.cursor = 'not-allowed';
+            btnComenzar.title = 'La encuesta no está disponible en este momento';
+        }
+    } else {
+        if (form) {
+            form.style.pointerEvents = 'auto';
+            form.style.opacity = '1';
+        }
+        // Habilitar botón "Comenzar"
+        if (btnComenzar) {
+            btnComenzar.disabled = false;
+            btnComenzar.style.opacity = '1';
+            btnComenzar.style.cursor = 'pointer';
+            btnComenzar.title = '';
+        }
+    }
 }
 
 function actualizarCriteriosEnHTML() {
@@ -687,6 +896,40 @@ function calcularResultado() {
 }
 
 async function guardarEvaluacion() {
+    // Verificar rango de fechas antes de guardar (considerando hora)
+    const ahora = new Date(); // Usar fecha y hora actuales
+    
+    const fechaInicio = configEvaluacion?.fechaInicioEncuesta ? new Date(configEvaluacion.fechaInicioEncuesta) : null;
+    const fechaFin = configEvaluacion?.fechaFinEncuesta ? new Date(configEvaluacion.fechaFinEncuesta) : null;
+    
+    if (fechaInicio) {
+        if (ahora < fechaInicio) {
+            const fechaInicioFormateada = fechaInicio.toLocaleString('es-ES', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            alert(`⚠️ La encuesta aún no está disponible. Por favor, espere hasta el ${fechaInicioFormateada}.`);
+            return;
+        }
+    }
+    
+    if (fechaFin) {
+        if (ahora > fechaFin) {
+            const fechaFinFormateada = fechaFin.toLocaleString('es-ES', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            alert(`⚠️ La encuesta ya no está disponible. El período de evaluación finalizó el ${fechaFinFormateada}.`);
+            return;
+        }
+    }
+    
     const evaluador = document.getElementById('evaluador').value;
     const tipoProveedor = document.querySelector('input[name="tipoProveedor"]:checked');
     const proveedor = document.getElementById('proveedor').value;
@@ -754,12 +997,20 @@ async function guardarEvaluacion() {
         };
         
         // Usar window para asegurar que llamamos a la función global de supabase-service.js
-        if (typeof window.guardarEvaluacionEnSupabase === 'function') {
+        console.log('💾 Intentando guardar evaluación:', evaluacionData);
+        
+        if (typeof guardarEvaluacionEnSupabase === 'function') {
+            console.log('✅ Usando guardarEvaluacionEnSupabase');
+            await guardarEvaluacionEnSupabase(evaluacionData);
+        } else if (typeof window.guardarEvaluacionEnSupabase === 'function') {
+            console.log('✅ Usando window.guardarEvaluacionEnSupabase');
             await window.guardarEvaluacionEnSupabase(evaluacionData);
         } else {
-            // Fallback: llamar directamente (debería estar en scope global)
-            await guardarEvaluacion(evaluacionData);
+            console.error('❌ guardarEvaluacionEnSupabase no está disponible');
+            throw new Error('La función guardarEvaluacionEnSupabase no está disponible. Por favor, recargue la página.');
         }
+        
+        console.log('✅ Evaluación guardada exitosamente');
         
         // Mostrar modal de éxito
         mostrarModalExito();

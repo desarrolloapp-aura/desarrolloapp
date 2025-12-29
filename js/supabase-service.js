@@ -47,7 +47,11 @@ async function cargarConfiguracionEvaluacion() {
                 descripcion: data.descripcion,
                 objetivo: data.objetivo,
                 itemsProducto: data.items_producto || [],
-                itemsServicio: data.items_servicio || []
+                itemsServicio: data.items_servicio || [],
+                anioEncuesta: data.anio_encuesta || new Date().getFullYear(),
+                fechaInicioEncuesta: data.fecha_inicio_encuesta || null,
+                fechaFinEncuesta: data.fecha_fin_encuesta || null,
+                zonaHorariaEncuesta: data.zona_horaria_encuesta || 'America/Santiago'
             };
         }
         
@@ -73,24 +77,54 @@ async function guardarConfiguracionEvaluacion(config) {
             descripcion: config.descripcion,
             objetivo: config.objetivo,
             items_producto: config.itemsProducto,
-            items_servicio: config.itemsServicio
+            items_servicio: config.itemsServicio,
+            anio_encuesta: config.anioEncuesta || null,
+            fecha_inicio_encuesta: config.fechaInicioEncuesta || null,
+            fecha_fin_encuesta: config.fechaFinEncuesta || null,
+            zona_horaria_encuesta: config.zonaHorariaEncuesta || 'America/Santiago'
         };
+        
+        console.log('💾 Datos recibidos en guardarConfiguracionEvaluacion:', {
+            anioEncuesta: config.anioEncuesta,
+            fechaInicioEncuesta: config.fechaInicioEncuesta,
+            fechaFinEncuesta: config.fechaFinEncuesta,
+            zonaHorariaEncuesta: config.zonaHorariaEncuesta
+        });
+        
+        console.log('💾 Guardando en Supabase con estos valores:', {
+            anio_encuesta: configData.anio_encuesta,
+            fecha_inicio_encuesta: configData.fecha_inicio_encuesta,
+            fecha_fin_encuesta: configData.fecha_fin_encuesta,
+            zona_horaria_encuesta: configData.zona_horaria_encuesta
+        });
         
         if (existing) {
             // Actualizar
-            const { error } = await window.supabaseClient
+            const { data, error } = await window.supabaseClient
                 .from('config_evaluacion')
                 .update(configData)
-                .eq('id', existing.id);
+                .eq('id', existing.id)
+                .select();
             
-            if (error) throw error;
+            if (error) {
+                console.error('❌ Error al guardar configuración:', error);
+                throw error;
+            }
+            console.log('✅ Configuración actualizada correctamente:', data);
+            return data;
         } else {
             // Insertar
-            const { error } = await window.supabaseClient
+            const { data, error } = await window.supabaseClient
                 .from('config_evaluacion')
-                .insert([configData]);
+                .insert([configData])
+                .select();
             
-            if (error) throw error;
+            if (error) {
+                console.error('❌ Error al insertar configuración:', error);
+                throw error;
+            }
+            console.log('✅ Configuración insertada correctamente:', data);
+            return data;
         }
         
         return true;
@@ -101,10 +135,16 @@ async function guardarConfiguracionEvaluacion(config) {
 }
 
 function getConfiguracionDefault() {
+    const hoy = new Date();
+    const anioActual = hoy.getFullYear();
     return {
         titulo: 'Evaluación de Proveedores',
         descripcion: 'Este sistema permite evaluar el desempeño de nuestros proveedores mediante un proceso estructurado y objetivo, considerando diferentes aspectos según el tipo de proveedor (Producto o Servicio).',
         objetivo: 'Medir y mejorar continuamente la calidad de nuestros proveedores, asegurando que cumplan con los estándares requeridos en términos de calidad de productos/servicios, cumplimiento de plazos, comunicación y respuesta, y certificaciones y cumplimiento normativo.',
+        anioEncuesta: anioActual,
+        fechaInicioEncuesta: null,
+        fechaFinEncuesta: null,
+        zonaHorariaEncuesta: 'America/Santiago',
         itemsProducto: [
             { nombre: 'Condiciones Financieras de Pago', ponderacion: 10 },
             { nombre: 'Información de certificación o implementación respecto a alguna ISO', ponderacion: 4 },

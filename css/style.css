@@ -32,6 +32,57 @@ body {
     }
 }
 
+/* Mensaje de rango de fechas */
+.mensaje-rango-fechas {
+    max-width: 1000px;
+    margin: 20px auto;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border: 2px solid #10b981;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mensaje-rango-contenido {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.mensaje-icono {
+    font-size: 2em;
+    flex-shrink: 0;
+}
+
+.mensaje-texto {
+    flex: 1;
+}
+
+.mensaje-texto strong {
+    display: block;
+    font-size: 1.1em;
+    color: #856404;
+    margin-bottom: 8px;
+}
+
+.mensaje-texto p {
+    color: #856404;
+    margin: 0;
+    line-height: 1.5;
+}
+
 header {
     text-align: center;
     margin-bottom: 40px;

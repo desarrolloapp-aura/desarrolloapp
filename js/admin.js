@@ -83,25 +83,42 @@ async function cargarConfiguracion() {
 }
 
 async function guardarConfiguracion() {
+    console.log('💾 Ejecutando guardarConfiguracion()...');
+    
     try {
-        // Guardar configuración de evaluación
-        await guardarConfiguracionEvaluacion({
+        // Guardar configuración de evaluación (incluyendo todos los campos)
+        console.log('💾 Guardando configuración de evaluación en Supabase...');
+        const resultado = await guardarConfiguracionEvaluacion({
             titulo: configuracion.titulo,
             descripcion: configuracion.descripcion,
             objetivo: configuracion.objetivo,
             itemsProducto: configuracion.itemsProducto,
-            itemsServicio: configuracion.itemsServicio
+            itemsServicio: configuracion.itemsServicio,
+            anioEncuesta: configuracion.anioEncuesta,
+            fechaInicioEncuesta: configuracion.fechaInicioEncuesta,
+            fechaFinEncuesta: configuracion.fechaFinEncuesta,
+            zonaHorariaEncuesta: configuracion.zonaHorariaEncuesta
         });
+        
+        if (!resultado) {
+            throw new Error('No se pudo guardar la configuración de evaluación');
+        }
+        
+        console.log('✅ Configuración de evaluación guardada');
 
         // Guardar asignaciones
         if (configuracion.asignacionProveedores) {
+            console.log('💾 Guardando asignaciones...');
             await guardarAsignaciones(configuracion.asignacionProveedores);
+            console.log('✅ Asignaciones guardadas');
         }
 
         mostrarMensaje('✅ Configuración guardada exitosamente en la base de datos.');
+        console.log('✅ Guardado completo exitoso');
     } catch (error) {
-        console.error('Error al guardar configuración:', error);
+        console.error('❌ Error al guardar configuración:', error);
         mostrarMensaje('❌ Error al guardar la configuración. Por favor, intente nuevamente.');
+        throw error; // Re-lanzar para que se maneje en guardarConfiguracionCompleta
     }
 }
 
@@ -233,10 +250,285 @@ async function inicializarFormulario() {
     const tituloInput = document.getElementById('tituloPrincipal');
     const descripcionInput = document.getElementById('descripcionEvaluacion');
     const objetivoInput = document.getElementById('objetivoEvaluacion');
+    const anioInput = document.getElementById('anioEncuesta');
+    const fechaInicioInput = document.getElementById('fechaInicioEncuesta');
+    const fechaFinInput = document.getElementById('fechaFinEncuesta');
 
     if (tituloInput) tituloInput.value = configuracion.titulo || configuracionDefault.titulo;
     if (descripcionInput) descripcionInput.value = configuracion.descripcion || configuracionDefault.descripcion;
     if (objetivoInput) objetivoInput.value = configuracion.objetivo || configuracionDefault.objetivo;
+    
+    // Cargar configuración de fechas
+    const hoy = new Date();
+    const anioActual = hoy.getFullYear();
+    
+    // Definir variables de hora y zona horaria
+    const horaInicioInput = document.getElementById('horaInicioEncuesta');
+    const horaFinInput = document.getElementById('horaFinEncuesta');
+    const zonaHorariaInput = document.getElementById('zonaHorariaEncuesta');
+    
+    if (anioInput) {
+        // Establecer año mínimo como el año actual (no permitir años anteriores)
+        anioInput.min = anioActual;
+        anioInput.value = configuracion.anioEncuesta || anioActual;
+        
+        // Si el año guardado es anterior al actual, usar el año actual
+        const anioGuardado = parseInt(configuracion.anioEncuesta) || anioActual;
+        if (anioGuardado < anioActual) {
+            anioInput.value = anioActual;
+        }
+        
+        // Establecer restricciones de fechas según el año
+        const anio = parseInt(anioInput.value) || anioActual;
+        const fechaMinima = hoy.toISOString().split('T')[0];
+        const fechaMinAnio = `${anio}-01-01`;
+        const fechaMaxAnio = `${anio}-12-31`;
+        // La fecha mínima es el mayor entre hoy y el inicio del año
+        const fechaMin = fechaMinAnio > fechaMinima ? fechaMinAnio : fechaMinima;
+        
+        if (fechaInicioInput) {
+            fechaInicioInput.min = fechaMin;
+            fechaInicioInput.max = fechaMaxAnio;
+            // Separar fecha y hora si vienen juntas
+            if (configuracion.fechaInicioEncuesta) {
+                const fechaHoraInicio = new Date(configuracion.fechaInicioEncuesta);
+                fechaInicioInput.value = fechaHoraInicio.toISOString().split('T')[0];
+                if (horaInicioInput) {
+                    const hora = fechaHoraInicio.toTimeString().split(' ')[0].substring(0, 5);
+                    horaInicioInput.value = hora;
+                }
+            }
+        }
+        if (fechaFinInput) {
+            fechaFinInput.min = fechaMin;
+            fechaFinInput.max = fechaMaxAnio;
+            // Separar fecha y hora si vienen juntas
+            if (configuracion.fechaFinEncuesta) {
+                const fechaHoraFin = new Date(configuracion.fechaFinEncuesta);
+                fechaFinInput.value = fechaHoraFin.toISOString().split('T')[0];
+                if (horaFinInput) {
+                    const hora = fechaHoraFin.toTimeString().split(' ')[0].substring(0, 5);
+                    horaFinInput.value = hora;
+                }
+            }
+            // Establecer fecha mínima basada en fecha de inicio si existe
+            if (fechaInicioInput && fechaInicioInput.value) {
+                // Usar la mayor entre fechaMin y fecha de inicio
+                if (fechaInicioInput.value > fechaMin) {
+                    fechaFinInput.min = fechaInicioInput.value;
+                }
+                // Si es el mismo día, establecer hora mínima
+                if (fechaFinInput.value === fechaInicioInput.value && 
+                    horaInicioInput && horaInicioInput.value && horaFinInput) {
+                    horaFinInput.min = horaInicioInput.value;
+                    // Si la hora de fin es anterior a la de inicio, ajustarla
+                    if (horaFinInput.value && horaFinInput.value < horaInicioInput.value) {
+                        horaFinInput.value = horaInicioInput.value;
+                    }
+                } else if (horaFinInput) {
+                    // Si son fechas diferentes, quitar restricción de hora
+                    horaFinInput.min = '';
+                }
+            }
+        }
+        if (zonaHorariaInput) {
+            zonaHorariaInput.value = configuracion.zonaHorariaEncuesta || 'America/Santiago';
+        }
+    }
+    
+    // Agregar validaciones en tiempo real
+    if (anioInput) {
+        anioInput.addEventListener('change', function() {
+            const anio = parseInt(this.value);
+            const anioActual = new Date().getFullYear();
+            
+            // Validar que no sea un año anterior al actual
+            if (anio && anio < anioActual) {
+                alert(`⚠️ No se puede seleccionar un año anterior a ${anioActual}. Se ajustó al año actual.`);
+                this.value = anioActual;
+                return;
+            }
+            
+            if (anio) {
+                // Actualizar restricciones de fechas según el año
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+                const fechaMinima = hoy.toISOString().split('T')[0];
+                
+                // Establecer fecha mínima y máxima según el año
+                const fechaMinAnio = `${anio}-01-01`;
+                const fechaMaxAnio = `${anio}-12-31`;
+                
+                if (fechaInicioInput) {
+                    // La fecha mínima es el mayor entre hoy y el inicio del año
+                    const fechaMin = fechaMinAnio > fechaMinima ? fechaMinAnio : fechaMinima;
+                    fechaInicioInput.min = fechaMin;
+                    fechaInicioInput.max = fechaMaxAnio;
+                }
+                if (fechaFinInput) {
+                    // La fecha mínima es el mayor entre hoy, el inicio del año, y la fecha de inicio (si existe)
+                    let fechaMin = fechaMinAnio > fechaMinima ? fechaMinAnio : fechaMinima;
+                    if (fechaInicioInput && fechaInicioInput.value && fechaInicioInput.value > fechaMin) {
+                        fechaMin = fechaInicioInput.value;
+                    }
+                    fechaFinInput.min = fechaMin;
+                    fechaFinInput.max = fechaMaxAnio;
+                }
+            }
+            validarFechasEncuesta();
+        });
+        
+        // Validar también al escribir
+        anioInput.addEventListener('input', function() {
+            const anio = parseInt(this.value);
+            const anioActual = new Date().getFullYear();
+            if (anio && anio < anioActual) {
+                this.value = anioActual;
+            }
+        });
+    }
+    if (fechaInicioInput) {
+        fechaInicioInput.addEventListener('change', function() {
+            // Actualizar fecha mínima de fecha fin cuando cambia fecha inicio
+            if (this.value && fechaFinInput) {
+                fechaFinInput.min = this.value;
+                // Si la fecha de fin es anterior a la de inicio, limpiarla
+                if (fechaFinInput.value && fechaFinInput.value < this.value) {
+                    fechaFinInput.value = '';
+                    if (horaFinInput) horaFinInput.value = '';
+                }
+                // Si la fecha de fin es la misma que la de inicio, actualizar hora mínima
+                if (fechaFinInput.value === this.value && horaInicioInput && horaFinInput) {
+                    if (horaInicioInput.value) {
+                        horaFinInput.min = horaInicioInput.value;
+                        // Si la hora de fin es anterior a la de inicio, ajustarla
+                        if (horaFinInput.value && horaFinInput.value < horaInicioInput.value) {
+                            horaFinInput.value = horaInicioInput.value;
+                        }
+                    }
+                } else if (horaFinInput) {
+                    // Si son fechas diferentes, quitar restricción de hora
+                    horaFinInput.min = '';
+                }
+            }
+            validarFechasEncuesta();
+        });
+    }
+    
+    if (horaInicioInput) {
+        horaInicioInput.addEventListener('change', function() {
+            // Si la fecha de fin es la misma que la de inicio, actualizar hora mínima de fin
+            if (fechaInicioInput && fechaInicioInput.value && 
+                fechaFinInput && fechaFinInput.value === fechaInicioInput.value &&
+                horaFinInput) {
+                if (this.value) {
+                    // Establecer hora mínima para bloquear horas anteriores visualmente
+                    horaFinInput.min = this.value;
+                    // Si la hora de fin es anterior a la de inicio, ajustarla
+                    if (horaFinInput.value && horaFinInput.value < this.value) {
+                        horaFinInput.value = this.value;
+                    }
+                } else {
+                    // Si no hay hora de inicio, quitar restricción
+                    horaFinInput.min = '';
+                }
+            } else if (horaFinInput) {
+                // Si son fechas diferentes, quitar restricción de hora
+                horaFinInput.min = '';
+            }
+            validarFechasEncuesta();
+        });
+        
+        // También validar cuando se carga la página si ya hay valores
+        horaInicioInput.addEventListener('input', function() {
+            // Actualizar en tiempo real mientras se escribe
+            if (fechaInicioInput && fechaInicioInput.value && 
+                fechaFinInput && fechaFinInput.value === fechaInicioInput.value &&
+                horaFinInput && this.value) {
+                horaFinInput.min = this.value;
+            }
+        });
+    }
+    
+    if (fechaFinInput) {
+        fechaFinInput.addEventListener('change', function() {
+            // Si la fecha de fin es la misma que la de inicio, actualizar hora mínima
+            if (fechaInicioInput && fechaInicioInput.value === this.value &&
+                horaInicioInput && horaInicioInput.value && horaFinInput) {
+                horaFinInput.min = horaInicioInput.value;
+                // Si la hora de fin es anterior a la de inicio, ajustarla
+                if (horaFinInput.value && horaFinInput.value < horaInicioInput.value) {
+                    horaFinInput.value = horaInicioInput.value;
+                }
+            } else if (horaFinInput) {
+                // Si son fechas diferentes, quitar restricción de hora
+                horaFinInput.min = '';
+            }
+            validarFechasEncuesta();
+        });
+    }
+    
+    if (horaFinInput) {
+        // Función para validar y ajustar la hora de fin
+        const validarHoraFin = function() {
+            if (fechaInicioInput && fechaInicioInput.value && 
+                fechaFinInput && fechaFinInput.value === fechaInicioInput.value &&
+                horaInicioInput && horaInicioInput.value && horaFinInput.value) {
+                if (horaFinInput.value < horaInicioInput.value) {
+                    // Si la hora es menor, ajustarla automáticamente
+                    horaFinInput.value = horaInicioInput.value;
+                }
+            }
+        };
+        
+        // Validar en tiempo real mientras se escribe o navega con teclas
+        horaFinInput.addEventListener('input', validarHoraFin);
+        
+        // Validar también cuando se pierde el foco
+        horaFinInput.addEventListener('change', function() {
+            validarHoraFin();
+            validarFechasEncuesta();
+        });
+        
+        // Interceptar teclas para prevenir valores menores (especialmente ArrowUp/ArrowDown)
+        horaFinInput.addEventListener('keydown', function(e) {
+            // Si es el mismo día y hay hora de inicio, validar
+            if (fechaInicioInput && fechaInicioInput.value && 
+                fechaFinInput && fechaFinInput.value === fechaInicioInput.value &&
+                horaInicioInput && horaInicioInput.value) {
+                // Para ArrowUp y ArrowDown, validar después de que se procese
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    setTimeout(validarHoraFin, 10);
+                }
+            }
+        });
+        
+        // Validar también cuando se hace clic en el campo (por si se usa el selector visual)
+        horaFinInput.addEventListener('click', function() {
+            setTimeout(validarHoraFin, 100);
+        });
+        
+        // Validar cuando se hace scroll en el campo (algunos navegadores permiten esto)
+        horaFinInput.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            setTimeout(validarHoraFin, 10);
+        });
+    }
+    
+    // Validar al cargar y establecer restricciones iniciales
+    setTimeout(() => {
+        // Establecer restricciones iniciales si ya hay valores
+        if (fechaInicioInput && fechaInicioInput.value && 
+            fechaFinInput && fechaFinInput.value === fechaInicioInput.value &&
+            horaInicioInput && horaInicioInput.value && horaFinInput) {
+            horaFinInput.min = horaInicioInput.value;
+            // Si la hora de fin es anterior, ajustarla
+            if (horaFinInput.value && horaFinInput.value < horaInicioInput.value) {
+                horaFinInput.value = horaInicioInput.value;
+            }
+        }
+        validarFechasEncuesta();
+    }, 100);
 
     // Cargar ítems de PRODUCTO
     const itemsProducto = configuracion.itemsProducto || configuracionDefault.itemsProducto;
@@ -1764,64 +2056,350 @@ function crearYDescargarExcelAdmin(evaluaciones, titulo) {
     alert(`Se descargaron ${evaluaciones.length} evaluación(es) en Excel.`);
 }
 
+// Función para validar fechas de la encuesta
+function validarFechasEncuesta() {
+    const mensajeDiv = document.getElementById('mensajeFechas');
+    const anioInput = document.getElementById('anioEncuesta');
+    const fechaInicioInput = document.getElementById('fechaInicioEncuesta');
+    const horaInicioInput = document.getElementById('horaInicioEncuesta');
+    const fechaFinInput = document.getElementById('fechaFinEncuesta');
+    const horaFinInput = document.getElementById('horaFinEncuesta');
+    
+    if (!mensajeDiv || !anioInput) return;
+    
+    let errores = [];
+    let advertencias = [];
+    
+    const anio = parseInt(anioInput.value);
+    const ahora = new Date(); // Usar fecha y hora actuales
+    const anioActual = ahora.getFullYear();
+    
+    // Validar año
+    if (!anio || anio < 2020 || anio > 2100) {
+        errores.push('El año debe estar entre 2020 y 2100');
+    }
+    
+    // Validar que el año no sea anterior al actual
+    if (anio && anio < anioActual) {
+        errores.push(`El año no puede ser anterior a ${anioActual}`);
+    }
+    
+    // Validar fecha de inicio
+    if (fechaInicioInput && fechaInicioInput.value) {
+        // Crear fecha desde el string de fecha (YYYY-MM-DD)
+        const fechaStr = fechaInicioInput.value;
+        const [anioFecha, mesFecha, diaFecha] = fechaStr.split('-').map(Number);
+        let fechaInicio = new Date(anioFecha, mesFecha - 1, diaFecha);
+        const anioInicio = fechaInicio.getFullYear();
+        
+        // Agregar hora si está especificada
+        if (horaInicioInput && horaInicioInput.value) {
+            const [horas, minutos] = horaInicioInput.value.split(':').map(Number);
+            fechaInicio.setHours(horas, minutos, 0, 0);
+        } else {
+            fechaInicio.setHours(0, 0, 0, 0);
+        }
+        
+        // No permitir fechas/horas hacia atrás (debe ser ahora o futura)
+        // Comparar solo si la fecha es del año actual o anterior
+        const anioActual = ahora.getFullYear();
+        if (anioInicio === anioActual) {
+            // Solo validar si es del mismo año
+            if (fechaInicio < ahora) {
+                errores.push('La fecha y hora de inicio no pueden ser anteriores a ahora');
+            }
+        }
+        
+        // Validar que corresponda al año de la encuesta
+        if (anio && anioInicio !== anio) {
+            errores.push(`La fecha de inicio debe corresponder al año ${anio}`);
+        }
+    }
+    
+    // Validar fecha de fin
+    if (fechaFinInput && fechaFinInput.value) {
+        // Crear fecha desde el string de fecha (YYYY-MM-DD)
+        const fechaStr = fechaFinInput.value;
+        const [anioFecha, mesFecha, diaFecha] = fechaStr.split('-').map(Number);
+        let fechaFin = new Date(anioFecha, mesFecha - 1, diaFecha);
+        const anioFin = fechaFin.getFullYear();
+        
+        // Agregar hora si está especificada
+        if (horaFinInput && horaFinInput.value) {
+            const [horas, minutos] = horaFinInput.value.split(':').map(Number);
+            fechaFin.setHours(horas, minutos, 0, 0);
+        } else {
+            // Si no hay hora, usar fin del día (23:59:59)
+            fechaFin.setHours(23, 59, 59, 999);
+        }
+        
+        // No permitir fechas/horas hacia atrás (debe ser ahora o futura)
+        // Comparar solo si la fecha es del año actual o anterior
+        const anioActual = ahora.getFullYear();
+        if (anioFin === anioActual) {
+            // Solo validar si es del mismo año
+            if (fechaFin < ahora) {
+                errores.push('La fecha y hora de fin no pueden ser anteriores a ahora');
+            }
+        }
+        
+        // Validar que corresponda al año de la encuesta
+        if (anio && anioFin !== anio) {
+            errores.push(`La fecha de fin debe corresponder al año ${anio}`);
+        }
+        
+        // Validar que fecha fin >= fecha inicio (incluyendo hora)
+        if (fechaInicioInput && fechaInicioInput.value) {
+            // Crear fecha de inicio con hora (usando la misma lógica que arriba)
+            const fechaInicioStr = fechaInicioInput.value;
+            const [anioInicio, mesInicio, diaInicio] = fechaInicioStr.split('-').map(Number);
+            let fechaInicioCompleta = new Date(anioInicio, mesInicio - 1, diaInicio);
+            
+            // Agregar hora de inicio si está especificada
+            if (horaInicioInput && horaInicioInput.value) {
+                const [horasInicio, minutosInicio] = horaInicioInput.value.split(':').map(Number);
+                fechaInicioCompleta.setHours(horasInicio, minutosInicio, 0, 0);
+            } else {
+                fechaInicioCompleta.setHours(0, 0, 0, 0);
+            }
+            
+            // Comparar fecha+hora completa
+            if (fechaFin < fechaInicioCompleta) {
+                errores.push('La fecha y hora de fin deben ser posteriores o iguales a la fecha y hora de inicio');
+            } else if (fechaFin.getTime() === fechaInicioCompleta.getTime()) {
+                // Permitir que sean iguales (mismo día y hora)
+                // No es un error, pero podría ser una advertencia si se desea
+            }
+        }
+    }
+    
+    // Mostrar mensajes
+    if (errores.length > 0) {
+        mensajeDiv.style.display = 'block';
+        mensajeDiv.style.backgroundColor = '#fee';
+        mensajeDiv.style.color = '#c33';
+        mensajeDiv.style.border = '1px solid #fcc';
+        mensajeDiv.innerHTML = '<strong>⚠️ Errores:</strong><ul style="margin: 5px 0; padding-left: 20px;">' + 
+            errores.map(e => `<li>${e}</li>`).join('') + '</ul>';
+    } else if (advertencias.length > 0) {
+        mensajeDiv.style.display = 'block';
+        mensajeDiv.style.backgroundColor = '#fff3cd';
+        mensajeDiv.style.color = '#856404';
+        mensajeDiv.style.border = '1px solid #ffc107';
+        mensajeDiv.innerHTML = '<strong>ℹ️ Advertencias:</strong><ul style="margin: 5px 0; padding-left: 20px;">' + 
+            advertencias.map(a => `<li>${a}</li>`).join('') + '</ul>';
+    } else {
+        mensajeDiv.style.display = 'none';
+    }
+}
+
 async function guardarConfiguracionCompleta() {
-    // Guardar información general
-    configuracion.titulo = document.getElementById('tituloPrincipal').value.trim() || configuracionDefault.titulo;
-    configuracion.descripcion = document.getElementById('descripcionEvaluacion').value.trim() || configuracionDefault.descripcion;
-    configuracion.objetivo = document.getElementById('objetivoEvaluacion').value.trim() || configuracionDefault.objetivo;
-
-    // Guardar ítems de PRODUCTO
-    configuracion.itemsProducto = [];
-    document.querySelectorAll('#itemsProductoContainer .item-editor').forEach(editor => {
-        const nombre = editor.querySelector('.item-nombre').value.trim();
-        const ponderacion = parseInt(editor.querySelector('.ponderacion-input').value) || 0;
-        if (nombre) {
-            configuracion.itemsProducto.push({ nombre, ponderacion });
-        }
-    });
-
-    // Guardar ítems de SERVICIO
-    configuracion.itemsServicio = [];
-    document.querySelectorAll('#itemsServicioContainer .item-editor').forEach(editor => {
-        const nombre = editor.querySelector('.item-nombre').value.trim();
-        const ponderacion = parseInt(editor.querySelector('.ponderacion-input').value) || 0;
-        if (nombre) {
-            configuracion.itemsServicio.push({ nombre, ponderacion });
-        }
-    });
-
-    // Guardar asignaciones de proveedores
-    if (!configuracion.asignacionProveedores) {
-        configuracion.asignacionProveedores = {};
+    console.log('💾 Iniciando guardado de configuración completa...');
+    
+    // Mostrar indicador de carga
+    const btnGuardar = document.getElementById('guardarConfigBtn') || 
+                       document.getElementById('guardarConfigBtnSidebar') ||
+                       document.getElementById('guardarTodoMobile');
+    const textoOriginal = btnGuardar?.textContent || 'Guardar Todo';
+    if (btnGuardar) {
+        btnGuardar.disabled = true;
+        btnGuardar.textContent = '⏳ Guardando...';
+        btnGuardar.style.opacity = '0.7';
     }
-
-    // Recopilar todas las asignaciones desde los selects
-    document.querySelectorAll('select[id^="asignacion_"]').forEach(select => {
-        const evaluador = select.dataset.evaluador;
-        const tipo = select.dataset.tipo;
-
-        if (!configuracion.asignacionProveedores[evaluador]) {
-            configuracion.asignacionProveedores[evaluador] = { PRODUCTO: [], SERVICIO: [] };
+    
+    try {
+        // Validar fechas antes de guardar
+        validarFechasEncuesta();
+        const mensajeDiv = document.getElementById('mensajeFechas');
+        if (mensajeDiv && mensajeDiv.style.display === 'block' && mensajeDiv.style.backgroundColor === '#fee') {
+            if (!confirm('⚠️ Hay errores en la configuración de fechas. ¿Desea guardar de todas formas?')) {
+                if (btnGuardar) {
+                    btnGuardar.disabled = false;
+                    btnGuardar.textContent = textoOriginal;
+                    btnGuardar.style.opacity = '1';
+                }
+                return;
+            }
+        }
+    
+        // Guardar información general
+        configuracion.titulo = document.getElementById('tituloPrincipal').value.trim() || configuracionDefault.titulo;
+        configuracion.descripcion = document.getElementById('descripcionEvaluacion').value.trim() || configuracionDefault.descripcion;
+        configuracion.objetivo = document.getElementById('objetivoEvaluacion').value.trim() || configuracionDefault.objetivo;
+        
+        // Guardar configuración de fechas
+        const anioInput = document.getElementById('anioEncuesta');
+        const fechaInicioInput = document.getElementById('fechaInicioEncuesta');
+        const horaInicioInput = document.getElementById('horaInicioEncuesta');
+        const fechaFinInput = document.getElementById('fechaFinEncuesta');
+        const horaFinInput = document.getElementById('horaFinEncuesta');
+        const zonaHorariaInput = document.getElementById('zonaHorariaEncuesta');
+        
+        console.log('🔍 Verificando inputs de fecha:', {
+            anioInput: !!anioInput,
+            fechaInicioInput: !!fechaInicioInput,
+            fechaInicioValue: fechaInicioInput?.value,
+            horaInicioInput: !!horaInicioInput,
+            horaInicioValue: horaInicioInput?.value,
+            fechaFinInput: !!fechaFinInput,
+            fechaFinValue: fechaFinInput?.value,
+            horaFinInput: !!horaFinInput,
+            horaFinValue: horaFinInput?.value,
+            zonaHorariaInput: !!zonaHorariaInput
+        });
+        
+        if (anioInput) {
+            configuracion.anioEncuesta = parseInt(anioInput.value) || new Date().getFullYear();
+        }
+        
+        // Combinar fecha y hora de inicio
+        if (fechaInicioInput && fechaInicioInput.value) {
+            // Parsear la fecha manualmente para evitar problemas de zona horaria
+            const fechaStr = fechaInicioInput.value; // Formato: YYYY-MM-DD
+            const [anio, mes, dia] = fechaStr.split('-').map(Number);
+            
+            console.log('📅 Procesando fecha inicio:', { fechaStr, anio, mes, dia });
+            
+            // Obtener horas y minutos
+            let horas = 0;
+            let minutos = 0;
+            if (horaInicioInput && horaInicioInput.value) {
+                [horas, minutos] = horaInicioInput.value.split(':').map(Number);
+                console.log('📅 Hora inicio agregada:', { horas, minutos });
+            }
+            
+            // Crear fecha directamente en UTC para evitar problemas de zona horaria
+            // Formato: YYYY-MM-DDTHH:MM:SS (sin Z, para que Supabase lo interprete como local)
+            const fechaInicioISO = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}T${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:00`;
+            configuracion.fechaInicioEncuesta = fechaInicioISO;
+            console.log('📅 Fecha inicio formateada para BD:', configuracion.fechaInicioEncuesta);
+        } else {
+            configuracion.fechaInicioEncuesta = null;
+            console.log('⚠️ No hay fecha de inicio configurada');
+        }
+        
+        // Combinar fecha y hora de fin
+        if (fechaFinInput && fechaFinInput.value) {
+            // Parsear la fecha manualmente para evitar problemas de zona horaria
+            const fechaStr = fechaFinInput.value; // Formato: YYYY-MM-DD
+            const [anio, mes, dia] = fechaStr.split('-').map(Number);
+            
+            console.log('📅 Procesando fecha fin:', { fechaStr, anio, mes, dia });
+            
+            // Obtener horas y minutos
+            let horas = 23;
+            let minutos = 59;
+            if (horaFinInput && horaFinInput.value) {
+                [horas, minutos] = horaFinInput.value.split(':').map(Number);
+                console.log('📅 Hora fin agregada:', { horas, minutos });
+            }
+            
+            // Crear fecha directamente en formato ISO sin zona horaria
+            // Formato: YYYY-MM-DDTHH:MM:SS (sin Z, para que Supabase lo interprete como local)
+            const fechaFinISO = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}T${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:00`;
+            configuracion.fechaFinEncuesta = fechaFinISO;
+            console.log('📅 Fecha fin formateada para BD:', configuracion.fechaFinEncuesta);
+        } else {
+            configuracion.fechaFinEncuesta = null;
+            console.log('⚠️ No hay fecha de fin configurada');
+        }
+        
+        // Guardar zona horaria
+        if (zonaHorariaInput) {
+            configuracion.zonaHorariaEncuesta = zonaHorariaInput.value || 'America/Santiago';
         }
 
-        // Obtener proveedores seleccionados
-        const seleccionados = Array.from(select.selectedOptions).map(opt => opt.value);
-        configuracion.asignacionProveedores[evaluador][tipo] = seleccionados;
-    });
+        // Guardar ítems de PRODUCTO
+        configuracion.itemsProducto = [];
+        document.querySelectorAll('#itemsProductoContainer .item-editor').forEach(editor => {
+            const nombre = editor.querySelector('.item-nombre').value.trim();
+            const ponderacion = parseInt(editor.querySelector('.ponderacion-input').value) || 0;
+            if (nombre) {
+                configuracion.itemsProducto.push({ nombre, ponderacion });
+            }
+        });
 
-    // Validar que las ponderaciones sumen 100%
-    const sumaProducto = configuracion.itemsProducto.reduce((sum, item) => sum + item.ponderacion, 0);
-    const sumaServicio = configuracion.itemsServicio.reduce((sum, item) => sum + item.ponderacion, 0);
+        // Guardar ítems de SERVICIO
+        configuracion.itemsServicio = [];
+        document.querySelectorAll('#itemsServicioContainer .item-editor').forEach(editor => {
+            const nombre = editor.querySelector('.item-nombre').value.trim();
+            const ponderacion = parseInt(editor.querySelector('.ponderacion-input').value) || 0;
+            if (nombre) {
+                configuracion.itemsServicio.push({ nombre, ponderacion });
+            }
+        });
 
-    if (sumaProducto !== 100 && configuracion.itemsProducto.length > 0) {
-        alert(`⚠️ Advertencia: Las ponderaciones de PRODUCTO suman ${sumaProducto}% (deberían sumar 100%)`);
+        // Guardar asignaciones de proveedores
+        if (!configuracion.asignacionProveedores) {
+            configuracion.asignacionProveedores = {};
+        }
+
+        // Recopilar todas las asignaciones desde los selects
+        document.querySelectorAll('select[id^="asignacion_"]').forEach(select => {
+            const evaluador = select.dataset.evaluador;
+            const tipo = select.dataset.tipo;
+
+            if (!configuracion.asignacionProveedores[evaluador]) {
+                configuracion.asignacionProveedores[evaluador] = { PRODUCTO: [], SERVICIO: [] };
+            }
+
+            // Obtener proveedores seleccionados
+            const seleccionados = Array.from(select.selectedOptions).map(opt => opt.value);
+            configuracion.asignacionProveedores[evaluador][tipo] = seleccionados;
+        });
+
+        // Validar que las ponderaciones sumen 100%
+        const sumaProducto = configuracion.itemsProducto.reduce((sum, item) => sum + item.ponderacion, 0);
+        const sumaServicio = configuracion.itemsServicio.reduce((sum, item) => sum + item.ponderacion, 0);
+
+        if (sumaProducto !== 100 && configuracion.itemsProducto.length > 0) {
+            alert(`⚠️ Advertencia: Las ponderaciones de PRODUCTO suman ${sumaProducto}% (deberían sumar 100%)`);
+        }
+
+        if (sumaServicio !== 100 && configuracion.itemsServicio.length > 0) {
+            alert(`⚠️ Advertencia: Las ponderaciones de SERVICIO suman ${sumaServicio}% (deberían sumar 100%)`);
+        }
+
+        // Log antes de guardar para verificar que las fechas estén en configuracion
+        console.log('💾 Configuración completa antes de guardar:', {
+            anioEncuesta: configuracion.anioEncuesta,
+            fechaInicioEncuesta: configuracion.fechaInicioEncuesta,
+            fechaFinEncuesta: configuracion.fechaFinEncuesta,
+            zonaHorariaEncuesta: configuracion.zonaHorariaEncuesta
+        });
+        
+        await guardarConfiguracion();
+        console.log('✅ Guardado completado exitosamente');
+        
+        // Restaurar botón
+        if (btnGuardar) {
+            btnGuardar.disabled = false;
+            btnGuardar.textContent = textoOriginal;
+            btnGuardar.style.opacity = '1';
+            // Mostrar feedback visual de éxito
+            const textoOriginalTemp = btnGuardar.textContent;
+            btnGuardar.textContent = '✅ Guardado';
+            btnGuardar.style.backgroundColor = '#10b981';
+            setTimeout(() => {
+                btnGuardar.textContent = textoOriginal;
+                btnGuardar.style.backgroundColor = '';
+            }, 2000);
+        }
+    } catch (error) {
+        console.error('❌ Error al guardar:', error);
+        if (btnGuardar) {
+            btnGuardar.disabled = false;
+            btnGuardar.textContent = textoOriginal;
+            btnGuardar.style.opacity = '1';
+            btnGuardar.style.backgroundColor = '#ef4444';
+            btnGuardar.textContent = '❌ Error al guardar';
+            setTimeout(() => {
+                btnGuardar.textContent = textoOriginal;
+                btnGuardar.style.backgroundColor = '';
+            }, 3000);
+        }
+        throw error; // Re-lanzar el error para que se muestre el mensaje
     }
-
-    if (sumaServicio !== 100 && configuracion.itemsServicio.length > 0) {
-        alert(`⚠️ Advertencia: Las ponderaciones de SERVICIO suman ${sumaServicio}% (deberían sumar 100%)`);
-    }
-
-    await guardarConfiguracion();
 }
 
 
