@@ -98,12 +98,7 @@ async function guardarConfiguracion() {
             await guardarAsignaciones(configuracion.asignacionProveedores);
         }
 
-        mostrarMensaje('✅ Configuración guardada exitosamente en la base de datos. Redirigiendo al formulario...');
-
-        // Redirigir al formulario después de 1 segundo
-        setTimeout(function () {
-            window.location.href = 'index.html';
-        }, 1000);
+        mostrarMensaje('✅ Configuración guardada exitosamente en la base de datos.');
     } catch (error) {
         console.error('Error al guardar configuración:', error);
         mostrarMensaje('❌ Error al guardar la configuración. Por favor, intente nuevamente.');
