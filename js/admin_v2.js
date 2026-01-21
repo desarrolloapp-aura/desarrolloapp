@@ -1139,102 +1139,122 @@ async function inicializarProveedores() {
             info.style.display = 'flex';
             info.style.flexDirection = 'column';
             info.style.justifyContent = 'center';
-            // --- HEADER: NAME ONLY (Guaranteed Visibility) ---
-            // Removed Icon from here to avoid layout conflicts.
-            const nameEl = document.createElement('div');
+            info.style.textAlign = 'left'; // Force left align for all children
 
-            // Name Logic
-            let displayName = proveedor;
-            if (typeof displayName !== 'string' || !displayName) {
-                displayName = String(displayName);
-            }
-            if (!displayName || displayName.trim() === '') {
-                displayName = '(NOMBRE VACIO)';
-            }
+            // --- HEADER ROW: Icon + Name ---
+            // CAVEMAN LAYOUT: Block + Float (Indestructible)
+            const headerRow = document.createElement('div');
+            headerRow.style.display = 'block';
+            headerRow.style.width = '100%';
+            headerRow.style.marginBottom = '5px';
+            headerRow.style.overflow = 'hidden'; // Clear floats
+            headerRow.style.border = 'none'; // Clean debug
 
-            nameEl.textContent = displayName;
-            nameEl.title = displayName;
-            nameEl.style.cssText = `
+            // 1. Notebook Action (Left - Floated)
+            const notebookBtn = document.createElement('button');
+            notebookBtn.innerHTML = '📋';
+            notebookBtn.title = 'Asignar evaluadores';
+            notebookBtn.style.cssText = `
+                float: left;
+                background: transparent !important;
+                border: none !important;
+                cursor: pointer;
+                font-size: 1.2rem;
+                padding: 0;
+                margin-right: 8px;
+                line-height: 1.2;
+            `;
+            notebookBtn.onclick = () => abrirEvaluacionAdmin(proveedor, tipo);
+
+            // 2. Name Element (Block context next to float)
+            const nombreEl = document.createElement('div');
+            nombreEl.className = 'proveedor-nombre-final';
+
+            // Final Safety Check
+            let finalName = proveedor;
+            if (!finalName || typeof finalName !== 'string' || finalName.trim() === '') {
+                finalName = '(Sin Nombre)';
+            }
+            nombreEl.textContent = finalName;
+
+            nombreEl.style.cssText = `
                 display: block;
-                width: calc(100% - 30px); /* Leave room for icons */
-                margin-bottom: 5px;
-                border-bottom: 1px solid #eee;
-                padding-bottom: 5px;
-                color: #000;
+                overflow: hidden; /* Triggers BFC to sit next to float */
+                color: #333 !important; 
                 font-weight: bold;
-                font-size: 1.1rem;
+                font-size: 1.1rem !important;
+                line-height: 1.3;
                 white-space: nowrap;
-                overflow: hidden;
                 text-overflow: ellipsis;
                 text-align: left;
             `;
-            // Append Name Directly
-            info.appendChild(nameEl);
+            nombreEl.title = finalName;
+
+            // Assemble Header
+            headerRow.appendChild(notebookBtn);
+            headerRow.appendChild(nombreEl);
 
             // --- TIPO ---
             const tipoEl = document.createElement('div');
+            tipoEl.className = 'proveedor-tipo';
             tipoEl.textContent = tipo;
-            tipoEl.style.color = tipo === 'PRODUCTO' ? '#1976d2' : '#388e3c';
-            tipoEl.style.fontWeight = 'bold';
+            tipoEl.style.color = tipo === 'PRODUCTO' ? '#4A90E2' : '#50C878';
             tipoEl.style.fontSize = '0.9rem';
-            tipoEl.style.marginBottom = '5px';
+            tipoEl.style.fontWeight = '600';
+            tipoEl.style.marginTop = '2px';
             tipoEl.style.textAlign = 'left';
-            info.appendChild(tipoEl);
 
             // --- EMAIL ROW ---
-            const emailRow = document.createElement('div');
-            emailRow.style.display = 'flex';
-            emailRow.style.alignItems = 'center';
-            emailRow.style.justifyContent = 'flex-start'; // Changed from space-between to start
-            emailRow.style.width = '100%';
-            emailRow.style.gap = '5px'; // Gap between text and pencil
+            const emailContainer = document.createElement('div');
+            emailContainer.style.display = 'flex';
+            emailContainer.style.alignItems = 'center';
+            emailContainer.style.justifyContent = 'flex-start';
+            emailContainer.style.marginTop = '4px';
+            emailContainer.style.gap = '5px'; // Tight gap
 
             const emailText = document.createElement('span');
-            emailText.textContent = email || 'Sin correo';
+            emailText.textContent = email;
+            emailText.style.fontSize = '0.85rem';
             emailText.style.color = '#666';
-            emailText.style.fontSize = '0.9rem';
-            emailText.style.overflow = 'hidden';
-            emailText.style.textOverflow = 'ellipsis';
             emailText.style.whiteSpace = 'nowrap';
-            emailText.style.textAlign = 'left';
+            emailText.style.width = 'auto'; // Prevent unwanted expansion
 
-            const editBtn = document.createElement('button');
-            editBtn.innerHTML = '✏️';
-            editBtn.title = 'Editar correo';
-            editBtn.style.background = 'transparent';
-            editBtn.style.border = 'none';
-            editBtn.style.cursor = 'pointer';
-            editBtn.style.fontSize = '1rem';
-            editBtn.style.padding = '0';
-            editBtn.style.margin = '0'; // Reset margins
-            editBtn.onclick = (e) => {
-                e.stopPropagation();
-                // Logic to edit email (prompt for now or modal integration if needed)
-                const newEmail = prompt('Editar correo para ' + displayName + ':', email || '');
-                if (newEmail !== null) {
-                    // Update email logic here (mock)
-                    configuracion.proveedores[proveedor].email = newEmail;
-                    inicializarProveedores();
+            const editEmailBtn = document.createElement('button');
+            editEmailBtn.innerHTML = '✏️';
+            editEmailBtn.title = 'Editar correo';
+            editEmailBtn.style.background = 'none';
+            editEmailBtn.style.border = 'none';
+            editEmailBtn.style.cursor = 'pointer';
+            editEmailBtn.style.fontSize = '0.9rem';
+            editEmailBtn.style.padding = '0';
+            editEmailBtn.style.opacity = '0.6';
+            editEmailBtn.style.flexShrink = '0'; // Keep icon size
+            editEmailBtn.onmouseover = () => editEmailBtn.style.opacity = '1';
+            editEmailBtn.onmouseout = () => editEmailBtn.style.opacity = '0.6';
+
+            editEmailBtn.onclick = async () => {
+                const nuevoEmail = prompt('Ingrese el nuevo correo para este proveedor:', email === 'Sin correo' ? '' : email);
+                if (nuevoEmail !== null) {
+                    await editarEmailProveedor(proveedor, nuevoEmail);
                 }
             };
 
-            emailRow.appendChild(emailText);
-            emailRow.appendChild(editBtn);
-            info.appendChild(emailRow);
+            emailContainer.appendChild(emailText);
+            emailContainer.appendChild(editEmailBtn);
 
-            card.appendChild(info);
+            info.appendChild(headerRow);
+            info.appendChild(tipoEl);
+            info.appendChild(emailContainer);
 
-            // --- ACTIONS (Absolute Top-Right) ---
+            // --- RIGHT ACTIONS: Only Trash ---
             const actionsDiv = document.createElement('div');
-            actionsDiv.style.position = 'absolute';
-            actionsDiv.style.top = '5px';
-            actionsDiv.style.right = '5px';
-            actionsDiv.style.display = 'flex';
-            actionsDiv.style.flexDirection = 'column'; // STACKED VERTICALLY
-            actionsDiv.style.gap = '25px'; // Increased gap to push notebook button down
-            actionsDiv.style.zIndex = '10';
+            actionsDiv.style.flexShrink = '0';
+            actionsDiv.style.marginLeft = 'auto';
 
-            // 1. Trash Button (Top)
+            // We need createActionButton helper or just create button manually
+            // Since createActionButton is not defined in this scope (it was inside the block I deleted), 
+            // I will create the trash button manually to be safe and simple.
+
             const trashBtn = document.createElement('button');
             trashBtn.innerHTML = '🗑️';
             trashBtn.title = 'Eliminar proveedor';
@@ -1242,32 +1262,13 @@ async function inicializarProveedores() {
             trashBtn.style.border = 'none';
             trashBtn.style.cursor = 'pointer';
             trashBtn.style.fontSize = '1.3rem';
-            trashBtn.style.padding = '0';
-            trashBtn.style.margin = '0';
-            trashBtn.style.lineHeight = '1';
-            trashBtn.onclick = (e) => {
-                e.stopPropagation();
-                eliminarProveedorLocal(proveedor);
-            };
+            trashBtn.style.padding = '5px';
+            trashBtn.style.color = '#dc3545';
+            trashBtn.onclick = () => eliminarProveedorLocal(proveedor);
+
             actionsDiv.appendChild(trashBtn);
 
-            // 2. Notebook Button (Bottom - Pushed down by gap)
-            const notebookBtn = document.createElement('button');
-            notebookBtn.innerHTML = '📋';
-            notebookBtn.title = 'Asignar evaluadores';
-            notebookBtn.style.background = 'transparent';
-            notebookBtn.style.border = 'none';
-            notebookBtn.style.cursor = 'pointer';
-            notebookBtn.style.fontSize = '1.3rem';
-            notebookBtn.style.padding = '0';
-            notebookBtn.style.margin = '0';
-            notebookBtn.style.lineHeight = '1';
-            notebookBtn.onclick = (e) => {
-                e.stopPropagation();
-                abrirEvaluacionAdmin(proveedor, tipo);
-            };
-            actionsDiv.appendChild(notebookBtn);
-
+            card.appendChild(info);
             card.appendChild(actionsDiv);
             container.appendChild(card);
         });
@@ -1921,7 +1922,7 @@ function mostrarEvaluacionesPorAnio(anio, todasEvaluaciones) {
         return fechaB - fechaA;
     });
 
-    evaluacionesAnio.forEach(eval => {
+    evaluacionesAnio.forEach(e => {
         const div = document.createElement('div');
         div.className = 'evaluacion-item';
         // Ajustar estilos según si es móvil

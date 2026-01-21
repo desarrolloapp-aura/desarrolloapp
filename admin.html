@@ -8,11 +8,11 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/supabase-config.js"></script>
-    <script src="js/supabase-service.js"></script>
+    <script src="js/supabase-config.js?v=35"></script>
+    <script src="js/supabase-service.js?v=35"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="js/admin-pdf.js"></script>
+    <script src="js/admin-pdf.js?v=35"></script>
     <script>
         // Verificar autenticación antes de cargar la página
         (function () {
@@ -62,7 +62,7 @@
                 <h1 id="headerTitle">Información General</h1>
                 <p>Gestiona la configuración del sistema de evaluación</p>
             </header>
-            
+
             <!-- Menú desplegable móvil -->
             <div id="menuConfigMobileDropdown" class="menu-config-mobile-dropdown" style="display: none;">
                 <button id="guardarTodoMobile" class="menu-config-item">💾 Guardar Todo</button>
@@ -88,19 +88,20 @@
                         <textarea id="objetivoEvaluacion" rows="3"
                             placeholder="Medir y mejorar continuamente..."></textarea>
                     </div>
-                    
+
                     <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid #e0e0e0;">
                         <h3 style="margin-bottom: 20px; color: #333;">📅 Configuración de Fechas de la Encuesta</h3>
-                        
+
                         <div class="form-group">
                             <label>Año de la Encuesta:</label>
-                            <input type="number" id="anioEncuesta" min="2020" max="2100"
-                                placeholder="2025" style="width: 200px;">
+                            <input type="number" id="anioEncuesta" min="2020" max="2100" placeholder="2025"
+                                style="width: 200px;">
                             <small style="display: block; color: #666; margin-top: 5px;">
-                                Define el año al que corresponde esta encuesta (no se pueden seleccionar años anteriores al actual)
+                                Define el año al que corresponde esta encuesta (no se pueden seleccionar años anteriores
+                                al actual)
                             </small>
                         </div>
-                        
+
                         <div class="form-group">
                             <label>Fecha de Inicio (Desde):</label>
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -111,7 +112,7 @@
                                 Fecha y hora desde la cual la encuesta estará disponible para los evaluadores
                             </small>
                         </div>
-                        
+
                         <div class="form-group">
                             <label>Fecha de Fin (Hasta):</label>
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -122,7 +123,7 @@
                                 Fecha y hora hasta la cual la encuesta estará disponible para los evaluadores
                             </small>
                         </div>
-                        
+
                         <div class="form-group">
                             <label>Zona Horaria:</label>
                             <select id="zonaHorariaEncuesta" style="width: 200px;">
@@ -138,8 +139,9 @@
                                 Seleccione la zona horaria para las fechas de inicio y fin
                             </small>
                         </div>
-                        
-                        <div id="mensajeFechas" style="display: none; padding: 10px; margin-top: 15px; border-radius: 5px;"></div>
+
+                        <div id="mensajeFechas"
+                            style="display: none; padding: 10px; margin-top: 15px; border-radius: 5px;"></div>
                     </div>
                 </section>
 
@@ -177,6 +179,8 @@
                         <label>Agregar Nuevo Proveedor:</label>
                         <div class="add-proveedor-container">
                             <input type="text" id="nuevoProveedor" placeholder="Nombre del proveedor">
+                            <input type="email" id="emailNuevoProveedor" placeholder="Email del proveedor"
+                                style="margin-right: 10px;">
                             <select id="tipoNuevoProveedor">
                                 <option value="PRODUCTO">PRODUCTO</option>
                                 <option value="SERVICIO">SERVICIO</option>
@@ -200,14 +204,19 @@
                     <h2>📋 Evaluaciones Guardadas</h2>
                     <div style="margin-bottom: 20px;">
                         <div class="form-group">
-                            <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-size: 1.1rem;">📅 Seleccione el Año:</label>
-                            <select id="filtroAnio" style="width: 100%; max-width: 300px; padding: 12px; border: 2px solid #667eea; border-radius: 8px; font-size: 1rem; font-weight: 600;">
+                            <label
+                                style="display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-size: 1.1rem;">📅
+                                Seleccione el Año:</label>
+                            <select id="filtroAnio"
+                                style="width: 100%; max-width: 300px; padding: 12px; border: 2px solid #667eea; border-radius: 8px; font-size: 1rem; font-weight: 600;">
                                 <option value="">-- Seleccione un año --</option>
                             </select>
                         </div>
                         <div id="contenidoAnio" style="display: none; margin-top: 20px;">
                             <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                                <button type="button" id="descargarAnioCompletoBtn" class="btn-add" style="width: 100%; padding: 12px 20px; font-size: 1rem; white-space: normal; word-wrap: break-word;">📥 DESCARGAR TODO EL AÑO SELECCIONADO</button>
+                                <button type="button" id="descargarAnioCompletoBtn" class="btn-add"
+                                    style="width: 100%; padding: 12px 20px; font-size: 1rem; white-space: normal; word-wrap: break-word;">📥
+                                    DESCARGAR TODO EL AÑO SELECCIONADO</button>
                             </div>
                             <h3 style="margin-bottom: 15px; color: #333;">Evaluaciones Individuales:</h3>
                             <div id="evaluacionesList"></div>
@@ -220,14 +229,19 @@
                     <h2>📄 Generar PDFs de Evaluaciones</h2>
                     <div style="margin-bottom: 20px;">
                         <div class="form-group">
-                            <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-size: 1.1rem;">📅 Seleccione el Año:</label>
-                            <select id="filtroAnioPDF" style="width: 100%; max-width: 300px; padding: 12px; border: 2px solid #667eea; border-radius: 8px; font-size: 1rem; font-weight: 600;">
+                            <label
+                                style="display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-size: 1.1rem;">📅
+                                Seleccione el Año:</label>
+                            <select id="filtroAnioPDF"
+                                style="width: 100%; max-width: 300px; padding: 12px; border: 2px solid #667eea; border-radius: 8px; font-size: 1rem; font-weight: 600;">
                                 <option value="">-- Seleccione un año --</option>
                             </select>
                         </div>
                         <div id="contenidoAnioPDF" style="display: none; margin-top: 20px;">
                             <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                                <button type="button" id="descargarPDFAnioCompletoBtn" class="btn-add" style="width: 100%; padding: 12px 20px; font-size: 1rem; white-space: normal; word-wrap: break-word;">📥 DESCARGAR TODOS LOS PDFs DEL AÑO SELECCIONADO</button>
+                                <button type="button" id="descargarPDFAnioCompletoBtn" class="btn-add"
+                                    style="width: 100%; padding: 12px 20px; font-size: 1rem; white-space: normal; word-wrap: break-word;">📥
+                                    DESCARGAR TODOS LOS PDFs DEL AÑO SELECCIONADO</button>
                             </div>
                             <h3 style="margin-bottom: 15px; color: #333;">PDFs Individuales:</h3>
                             <div id="pdfsList"></div>
@@ -272,7 +286,7 @@
         </main>
     </div>
 
-    <script src="js/admin.js"></script>
+    <script src="js/admin.js?v=37"></script>
     <script>
         // Script para manejar el menú móvil de configuración
         document.addEventListener('DOMContentLoaded', function () {
@@ -283,7 +297,7 @@
 
             // Cerrar menú al hacer clic fuera
             if (menuConfigDropdown) {
-                document.addEventListener('click', function(e) {
+                document.addEventListener('click', function (e) {
                     if (!menuConfigDropdown.contains(e.target)) {
                         const configMenuItem = document.querySelector('.menu-item-config-mobile');
                         if (configMenuItem && !configMenuItem.contains(e.target)) {
@@ -295,12 +309,12 @@
 
             // Guardar Todo
             if (guardarTodoMobile) {
-                guardarTodoMobile.addEventListener('click', async function(e) {
+                guardarTodoMobile.addEventListener('click', async function (e) {
                     e.preventDefault();
                     e.stopPropagation();
                     menuConfigDropdown.style.display = 'none';
                     console.log('💾 Botón guardar móvil clickeado');
-                    
+
                     try {
                         if (typeof guardarConfiguracionCompleta === 'function') {
                             await guardarConfiguracionCompleta();
@@ -317,30 +331,30 @@
 
             // Cambiar Contraseña - ir a sección de configuración
             if (cambiarPasswordMobile) {
-                cambiarPasswordMobile.addEventListener('click', function(e) {
+                cambiarPasswordMobile.addEventListener('click', function (e) {
                     e.preventDefault();
                     e.stopPropagation();
                     menuConfigDropdown.style.display = 'none';
-                    
+
                     // Activar sección de configuración
-                    setTimeout(function() {
+                    setTimeout(function () {
                         const menuItems = document.querySelectorAll('.menu-item');
                         const sections = document.querySelectorAll('.admin-section');
                         const headerTitle = document.getElementById('headerTitle');
-                        
+
                         // Ocultar todas las secciones
                         sections.forEach(section => {
                             section.style.display = 'none';
                             section.classList.remove('active-section');
                         });
-                        
+
                         // Mostrar sección de configuración
                         const configSection = document.getElementById('section-configuracion');
                         if (configSection) {
                             configSection.style.display = 'block';
                             configSection.classList.add('active-section');
                         }
-                        
+
                         // Actualizar menú activo
                         menuItems.forEach(item => {
                             item.classList.remove('active');
@@ -348,12 +362,12 @@
                                 item.classList.add('active');
                             }
                         });
-                        
+
                         // Actualizar título
                         if (headerTitle) {
                             headerTitle.textContent = '⚙️ Configuración';
                         }
-                        
+
                         // Scroll al inicio
                         window.scrollTo(0, 0);
                     }, 200);
@@ -362,11 +376,11 @@
 
             // Cerrar Sesión
             if (cerrarSesionMobile) {
-                cerrarSesionMobile.addEventListener('click', function(e) {
+                cerrarSesionMobile.addEventListener('click', function (e) {
                     e.preventDefault();
                     e.stopPropagation();
                     menuConfigDropdown.style.display = 'none';
-                    
+
                     // Cerrar sesión directamente (sin confirmación adicional, el botón del sidebar ya tiene una)
                     sessionStorage.removeItem('adminAuthenticated');
                     sessionStorage.removeItem('adminAuthTime');
@@ -416,7 +430,7 @@
             menuItems.forEach(item => {
                 item.addEventListener('click', function (e) {
                     const target = this.getAttribute('data-target');
-                    
+
                     // En móviles, si es el item de configuración, abrir el menú desplegable
                     if (target === 'section-configuracion' && window.innerWidth <= 900) {
                         e.preventDefault();
@@ -428,7 +442,7 @@
                             return false; // No cambiar de sección
                         }
                     }
-                    
+
                     // Obtener texto del título (sin el icono si se prefiere)
                     let title = this.textContent;
                     switchSection(target, title);

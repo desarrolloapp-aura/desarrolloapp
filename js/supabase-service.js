@@ -35,12 +35,12 @@ async function cargarConfiguracionEvaluacion() {
             .order('id', { ascending: false })
             .limit(1)
             .single();
-        
+
         if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
             console.error('Error al cargar configuración:', error);
             return getConfiguracionDefault();
         }
-        
+
         if (data) {
             return {
                 titulo: data.titulo,
@@ -54,7 +54,7 @@ async function cargarConfiguracionEvaluacion() {
                 zonaHorariaEncuesta: data.zona_horaria_encuesta || 'America/Santiago'
             };
         }
-        
+
         return getConfiguracionDefault();
     } catch (e) {
         console.error('Error al cargar configuración:', e);
@@ -71,7 +71,7 @@ async function guardarConfiguracionEvaluacion(config) {
             .select('id')
             .limit(1)
             .single();
-        
+
         const configData = {
             titulo: config.titulo,
             descripcion: config.descripcion,
@@ -83,21 +83,21 @@ async function guardarConfiguracionEvaluacion(config) {
             fecha_fin_encuesta: config.fechaFinEncuesta || null,
             zona_horaria_encuesta: config.zonaHorariaEncuesta || 'America/Santiago'
         };
-        
+
         console.log('💾 Datos recibidos en guardarConfiguracionEvaluacion:', {
             anioEncuesta: config.anioEncuesta,
             fechaInicioEncuesta: config.fechaInicioEncuesta,
             fechaFinEncuesta: config.fechaFinEncuesta,
             zonaHorariaEncuesta: config.zonaHorariaEncuesta
         });
-        
+
         console.log('💾 Guardando en Supabase con estos valores:', {
             anio_encuesta: configData.anio_encuesta,
             fecha_inicio_encuesta: configData.fecha_inicio_encuesta,
             fecha_fin_encuesta: configData.fecha_fin_encuesta,
             zona_horaria_encuesta: configData.zona_horaria_encuesta
         });
-        
+
         if (existing) {
             // Actualizar
             const { data, error } = await window.supabaseClient
@@ -105,7 +105,7 @@ async function guardarConfiguracionEvaluacion(config) {
                 .update(configData)
                 .eq('id', existing.id)
                 .select();
-            
+
             if (error) {
                 console.error('❌ Error al guardar configuración:', error);
                 throw error;
@@ -118,7 +118,7 @@ async function guardarConfiguracionEvaluacion(config) {
                 .from('config_evaluacion')
                 .insert([configData])
                 .select();
-            
+
             if (error) {
                 console.error('❌ Error al insertar configuración:', error);
                 throw error;
@@ -126,7 +126,7 @@ async function guardarConfiguracionEvaluacion(config) {
             console.log('✅ Configuración insertada correctamente:', data);
             return data;
         }
-        
+
         return true;
     } catch (error) {
         console.error('Error al guardar configuración:', error);
@@ -175,7 +175,7 @@ async function cargarEvaluadores() {
             .select('*')
             .eq('activo', true)
             .order('nombre');
-        
+
         if (error) throw error;
         return data.map(e => e.nombre);
     } catch (error) {
@@ -193,7 +193,7 @@ async function crearEvaluador(nombre) {
             .select('id, activo')
             .eq('nombre', nombre)
             .maybeSingle();
-        
+
         if (existente) {
             // Si existe pero está inactivo, reactivarlo
             if (!existente.activo) {
@@ -203,21 +203,21 @@ async function crearEvaluador(nombre) {
                     .eq('id', existente.id)
                     .select()
                     .single();
-                
+
                 if (error) throw error;
                 return data;
             }
             // Si ya existe y está activo, retornar el existente
             return existente;
         }
-        
+
         // Si no existe, crearlo
         const { data, error } = await window.supabaseClient
             .from('evaluadores')
             .insert([{ nombre: nombre }])
             .select()
             .single();
-        
+
         if (error) throw error;
         return data;
     } catch (error) {
@@ -233,7 +233,7 @@ async function eliminarEvaluador(nombre) {
             .from('evaluadores')
             .update({ activo: false })
             .eq('nombre', nombre);
-        
+
         if (error) throw error;
         return true;
     } catch (error) {
@@ -252,14 +252,17 @@ async function cargarProveedores() {
             .select('*')
             .eq('activo', true)
             .order('nombre');
-        
+
         if (error) throw error;
-        
+
         const proveedoresObj = {};
         data.forEach(p => {
-            proveedoresObj[p.nombre] = p.tipo;
+            proveedoresObj[p.nombre] = {
+                tipo: p.tipo,
+                email: p.email || ''
+            };
         });
-        
+
         return proveedoresObj;
     } catch (error) {
         console.error('Error al cargar proveedores:', error);
@@ -267,40 +270,60 @@ async function cargarProveedores() {
     }
 }
 
-async function crearProveedor(nombre, tipo) {
+async function actualizarEmailProveedor(nombre, email) {
+    console.log('🔵 actualizarEmailProveedor llamado con:', { nombre, email });
+    await waitForSupabase();
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('proveedores')
+            .update({ email: email })
+            .eq('nombre', nombre)
+            .select();
+
+        console.log('🔵 Respuesta de Supabase:', { data, error });
+
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error('Error al actualizar email proveedor:', error);
+        throw error;
+    }
+}
+
+async function crearProveedor(nombre, tipo, email) {
     await waitForSupabase();
     try {
         // Verificar si ya existe (activo o inactivo)
         const { data: existente } = await window.supabaseClient
             .from('proveedores')
-            .select('id, activo, tipo')
+            .select('id, activo, tipo, email')
             .eq('nombre', nombre)
             .maybeSingle();
-        
+
         if (existente) {
-            // Si existe pero está inactivo, reactivarlo y actualizar tipo si es necesario
-            if (!existente.activo || existente.tipo !== tipo) {
+            // Si existe pero está inactivo o datos cambiaron, actualizar
+            if (!existente.activo || existente.tipo !== tipo || existente.email !== email) {
                 const { data, error } = await window.supabaseClient
                     .from('proveedores')
-                    .update({ activo: true, tipo: tipo })
+                    .update({ activo: true, tipo: tipo, email: email })
                     .eq('id', existente.id)
                     .select()
                     .single();
-                
+
                 if (error) throw error;
                 return data;
             }
             // Si ya existe y está activo, retornar el existente
             return existente;
         }
-        
+
         // Si no existe, crearlo
         const { data, error } = await window.supabaseClient
             .from('proveedores')
-            .insert([{ nombre: nombre, tipo: tipo }])
+            .insert([{ nombre: nombre, tipo: tipo, email: email }])
             .select()
             .single();
-        
+
         if (error) throw error;
         return data;
     } catch (error) {
@@ -316,7 +339,7 @@ async function eliminarProveedor(nombre) {
             .from('proveedores')
             .update({ activo: false })
             .eq('nombre', nombre);
-        
+
         if (error) throw error;
         return true;
     } catch (error) {
@@ -334,11 +357,11 @@ async function cargarAsignaciones() {
             .from('evaluadores')
             .select('id, nombre')
             .eq('activo', true);
-        
+
         if (!evaluadores) return {};
-        
+
         const asignaciones = {};
-        
+
         for (const evaluador of evaluadores) {
             const { data: asigns } = await window.supabaseClient
                 .from('asignaciones')
@@ -349,12 +372,12 @@ async function cargarAsignaciones() {
                     )
                 `)
                 .eq('evaluador_id', evaluador.id);
-            
+
             asignaciones[evaluador.nombre] = {
                 PRODUCTO: [],
                 SERVICIO: []
             };
-            
+
             if (asigns) {
                 asigns.forEach(a => {
                     if (a.proveedores && a.proveedores.nombre) {
@@ -363,7 +386,7 @@ async function cargarAsignaciones() {
                 });
             }
         }
-        
+
         return asignaciones;
     } catch (error) {
         console.error('Error al cargar asignaciones:', error);
@@ -379,33 +402,33 @@ async function guardarAsignaciones(asignaciones) {
             .from('evaluadores')
             .select('id, nombre')
             .eq('activo', true);
-        
+
         const { data: proveedores } = await window.supabaseClient
             .from('proveedores')
             .select('id, nombre')
             .eq('activo', true);
-        
+
         const evaluadoresMap = {};
         evaluadores.forEach(e => evaluadoresMap[e.nombre] = e.id);
-        
+
         const proveedoresMap = {};
         proveedores.forEach(p => proveedoresMap[p.nombre] = p.id);
-        
+
         // Eliminar todas las asignaciones existentes
         const { error: deleteError } = await window.supabaseClient
             .from('asignaciones')
             .delete()
             .neq('id', 0); // Eliminar todas
-        
+
         if (deleteError) throw deleteError;
-        
+
         // Insertar nuevas asignaciones
         const asignacionesToInsert = [];
-        
+
         Object.keys(asignaciones).forEach(evaluadorNombre => {
             const evaluadorId = evaluadoresMap[evaluadorNombre];
             if (!evaluadorId) return;
-            
+
             ['PRODUCTO', 'SERVICIO'].forEach(tipo => {
                 asignaciones[evaluadorNombre][tipo].forEach(proveedorNombre => {
                     const proveedorId = proveedoresMap[proveedorNombre];
@@ -419,15 +442,15 @@ async function guardarAsignaciones(asignaciones) {
                 });
             });
         });
-        
+
         if (asignacionesToInsert.length > 0) {
             const { error: insertError } = await window.supabaseClient
                 .from('asignaciones')
                 .insert(asignacionesToInsert);
-            
+
             if (insertError) throw insertError;
         }
-        
+
         return true;
     } catch (error) {
         console.error('Error al guardar asignaciones:', error);
@@ -448,24 +471,49 @@ async function cargarEvaluaciones() {
                 proveedores:proveedor_id (nombre)
             `)
             .order('created_at', { ascending: false }); // Ordenar por fecha de guardado
-        
+
         if (error) throw error;
-        
+
         return data.map(e => {
+            // Helper to see if we have metadata in responses
+            let metaEvaluador = null;
+            let metaProveedor = null;
+            let cleanRespuestas = e.respuestas;
+
+            if (Array.isArray(e.respuestas)) {
+                const metaItem = e.respuestas.find(r => r.item === '__META__');
+                if (metaItem) {
+                    metaEvaluador = metaItem.evaluadorNombre;
+                    metaProveedor = metaItem.proveedorNombre;
+                    // Hide metadata from normal usage
+                    cleanRespuestas = e.respuestas.filter(r => r.item !== '__META__');
+                }
+            }
+
+            // Helper to safely extract name from joined relation or metadata
+            const getNombre = (obj, metaName) => {
+                if (metaName) return metaName; // Prioritize saved metadata (what was on the form)
+                if (!obj) return 'No especificado';
+                if (Array.isArray(obj)) {
+                    return obj.length > 0 ? obj[0].nombre : 'No especificado';
+                }
+                return obj.nombre || 'No especificado';
+            };
+
             // fecha_evaluacion es la fecha del calendario seleccionada
             const fechaEvaluacion = e.fecha_evaluacion || new Date().toISOString();
             // created_at es la fecha y hora cuando se guardó en la BD
             const createdAt = e.created_at || new Date().toISOString();
             // El campo en Supabase se llama "año" (con tilde)
             const anio = e.año || e.anio || new Date(fechaEvaluacion).getFullYear();
-            
+
             return {
                 id: e.id,
-                evaluador: e.evaluadores.nombre,
-                proveedor: e.proveedores.nombre,
+                evaluador: getNombre(e.evaluadores, metaEvaluador),
+                proveedor: getNombre(e.proveedores, metaProveedor),
                 tipo: e.tipo_proveedor,
                 correoProveedor: e.correo_proveedor,
-                respuestas: e.respuestas,
+                respuestas: cleanRespuestas,
                 resultadoFinal: e.resultado_final,
                 fechaEvaluacion: fechaEvaluacion, // Fecha del calendario (fecha_evaluacion)
                 createdAt: createdAt, // Fecha de guardado (created_at)
@@ -490,23 +538,24 @@ async function guardarEvaluacionEnSupabase(evaluacion) {
             .eq('nombre', evaluacion.evaluador)
             .eq('activo', true)
             .single();
-        
+
         const { data: proveedor } = await window.supabaseClient
             .from('proveedores')
             .select('id')
             .eq('nombre', evaluacion.proveedor)
             .eq('activo', true)
             .single();
-        
+
         if (!evaluador || !proveedor) {
-            throw new Error('Evaluador o proveedor no encontrado');
+            throw new Error('Evaluador o proveedor no encontrado en la base de datos (IDs)');
         }
-        
-        // Convertir respuestas a formato JSONB
+
+        // Convertir respuestas a formato JSONB y AÑADIR METADATA DE NOMBRES
+        // Esto cumple con "tomarlo del formulario" como respaldo
         let respuestasArray = [];
         if (Array.isArray(evaluacion.respuestas)) {
-            // Ya viene como array
-            respuestasArray = evaluacion.respuestas;
+            // Ya viene como array, clonarlo para no mutar original
+            respuestasArray = [...evaluacion.respuestas];
         } else {
             // Convertir objeto a array
             Object.keys(evaluacion.respuestas).forEach(key => {
@@ -516,17 +565,22 @@ async function guardarEvaluacionEnSupabase(evaluacion) {
                 });
             });
         }
-        
+
+        // Inject Metadata
+        respuestasArray.push({
+            item: '__META__',
+            valor: 0,
+            evaluadorNombre: evaluacion.evaluador, // Guardar el texto literal del form
+            proveedorNombre: evaluacion.proveedor
+        });
+
         // Usar la fecha del calendario para fecha_evaluacion
         // created_at se maneja automáticamente por Supabase con default now()
         const fechaEvaluacion = evaluacion.fechaEvaluacion || evaluacion.fecha || new Date().toISOString();
         const anio = evaluacion.anio || new Date(fechaEvaluacion).getFullYear();
-        
-        console.log('💾 Guardando evaluación:');
-        console.log('  - fecha_evaluacion (del calendario):', fechaEvaluacion);
-        console.log('  - año:', anio);
-        console.log('  - created_at se asignará automáticamente por Supabase');
-        
+
+        console.log('💾 Guardando evaluación con metadatos:', evaluacion.evaluador, evaluacion.proveedor);
+
         const { data, error } = await window.supabaseClient
             .from('evaluaciones')
             .insert([{
@@ -538,17 +592,16 @@ async function guardarEvaluacionEnSupabase(evaluacion) {
                 resultado_final: evaluacion.resultadoFinal,
                 fecha_evaluacion: fechaEvaluacion, // Fecha del calendario seleccionada
                 año: anio  // El campo en Supabase se llama "año" (con tilde)
-                // created_at se asigna automáticamente por Supabase con default now()
             }])
             .select()
             .single();
-        
+
         if (data) {
             console.log('✅ Evaluación guardada:');
             console.log('  - fecha_evaluacion:', data.fecha_evaluacion);
             console.log('  - created_at:', data.created_at);
         }
-        
+
         if (error) throw error;
         return data;
     } catch (error) {
@@ -564,7 +617,7 @@ async function eliminarEvaluacion(id) {
             .from('evaluaciones')
             .delete()
             .eq('id', id);
-        
+
         if (error) throw error;
         return true;
     } catch (error) {
@@ -591,7 +644,7 @@ async function validarPasswordAdmin(password) {
     try {
         // Hashear la contraseña ingresada
         const passwordHash = await hashPassword(password);
-        
+
         // Obtener el hash almacenado en Supabase
         const { data, error } = await window.supabaseClient
             .from('admin_password')
@@ -599,17 +652,17 @@ async function validarPasswordAdmin(password) {
             .order('id', { ascending: false })
             .limit(1)
             .maybeSingle();
-        
+
         if (error) {
             console.error('Error al validar contraseña:', error);
             return false;
         }
-        
+
         if (!data || !data.password_hash) {
             console.error('No se encontró hash de contraseña en la base de datos. Por favor, ejecuta el SQL de configuración.');
             return false;
         }
-        
+
         // Comparar hashes
         return passwordHash === data.password_hash;
     } catch (error) {
@@ -624,7 +677,7 @@ async function actualizarPasswordAdmin(nuevaPassword) {
     try {
         // Hashear la nueva contraseña
         const passwordHash = await hashPassword(nuevaPassword);
-        
+
         // Verificar si ya existe un registro
         const { data: existing, error: checkError } = await window.supabaseClient
             .from('admin_password')
@@ -632,36 +685,95 @@ async function actualizarPasswordAdmin(nuevaPassword) {
             .order('id', { ascending: false })
             .limit(1)
             .maybeSingle();
-        
+
         // Si hay error y no es "no rows", lanzar error
         if (checkError && checkError.code !== 'PGRST116') {
             throw checkError;
         }
-        
+
         if (existing) {
             // Actualizar
             const { error } = await window.supabaseClient
                 .from('admin_password')
-                .update({ 
+                .update({
                     password_hash: passwordHash,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', existing.id);
-            
+
             if (error) throw error;
         } else {
             // Insertar
             const { error } = await window.supabaseClient
                 .from('admin_password')
                 .insert([{ password_hash: passwordHash }]);
-            
+
             if (error) throw error;
         }
-        
+
         return true;
     } catch (error) {
         console.error('Error al actualizar contraseña:', error);
         return false;
     }
+}
+
+
+// ========== EVALUACIONES ADMINISTRADOR ==========
+
+async function guardarEvaluacionAdmin(proveedor, item, valor) {
+    await waitForSupabase();
+    try {
+        // Upsert (insert or update)
+        const { error } = await window.supabaseClient
+            .from('evaluaciones_admin')
+            .upsert({
+                proveedor: proveedor,
+                item: item,
+                valor: valor,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'proveedor, item' });
+
+        if (error) {
+            console.error('Error detallado upsert:', error);
+            throw error;
+        }
+        return true;
+    } catch (error) {
+        console.error('Error al guardar evaluación admin:', error);
+        return false;
+    }
+}
+
+async function cargarEvaluacionesAdmin(proveedor) {
+    await waitForSupabase();
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('evaluaciones_admin')
+            .select('*')
+            .eq('proveedor', proveedor);
+
+        if (error) {
+            if (error.code === '42P01') return {}; // undefined_table
+            throw error;
+        }
+
+        const resultados = {};
+        if (data) {
+            data.forEach(row => {
+                resultados[row.item] = row.valor;
+            });
+        }
+        return resultados;
+    } catch (error) {
+        console.error('Error al cargar evaluaciones admin:', error);
+        return {};
+    }
+}
+
+// Make globally available
+if (typeof window !== 'undefined') {
+    window.guardarEvaluacionAdmin = guardarEvaluacionAdmin;
+    window.cargarEvaluacionesAdmin = cargarEvaluacionesAdmin;
 }
 

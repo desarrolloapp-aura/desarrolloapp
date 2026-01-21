@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
     <script src="js/supabase-service.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
+
 <body>
     <div class="container">
         <!-- Mensaje de rango de fechas -->
@@ -22,7 +24,7 @@
                 </div>
             </div>
         </div>
-        
+
         <header>
             <h1 id="tituloPrincipal">Evaluación de Proveedores</h1>
         </header>
@@ -56,10 +58,13 @@
             <section class="info-section">
                 <div class="info-content">
                     <h2>📋 ¿Qué es esta evaluación?</h2>
-                    <p id="descripcionEvaluacion">Este sistema permite evaluar el desempeño de nuestros proveedores mediante un proceso estructurado y objetivo, considerando diferentes aspectos según el tipo de proveedor (Producto o Servicio).</p>
-                    
+                    <p id="descripcionEvaluacion">Este sistema permite evaluar el desempeño de nuestros proveedores
+                        mediante un proceso estructurado y objetivo, considerando diferentes aspectos según el tipo de
+                        proveedor (Producto o Servicio).</p>
+
                     <h3>🎯 Objetivo</h3>
-                    <p id="objetivoEvaluacion">Medir y mejorar continuamente la calidad de nuestros proveedores, asegurando que cumplan con los estándares requeridos en términos de:</p>
+                    <p id="objetivoEvaluacion">Medir y mejorar continuamente la calidad de nuestros proveedores,
+                        asegurando que cumplan con los estándares requeridos en términos de:</p>
                     <ul>
                         <li>Calidad de productos/servicios</li>
                         <li>Cumplimiento de plazos</li>
@@ -73,37 +78,44 @@
                             <div class="step-number">1</div>
                             <div class="step-content">
                                 <strong>Selección del Evaluador</strong>
-                                <p>Cada evaluador tiene asignados proveedores específicos según su área de responsabilidad.</p>
+                                <p>Cada evaluador tiene asignados proveedores específicos según su área de
+                                    responsabilidad.</p>
                             </div>
                         </div>
                         <div class="step">
                             <div class="step-number">2</div>
                             <div class="step-content">
                                 <strong>Tipo de Proveedor</strong>
-                                <p>Selecciona si el proveedor es de <strong>PRODUCTO</strong> o <strong>SERVICIO</strong> ya que cada tipo tiene criterios de evaluación diferentes.</p>
+                                <p>Selecciona si el proveedor es de <strong>PRODUCTO</strong> o
+                                    <strong>SERVICIO</strong> ya que cada tipo tiene criterios de evaluación diferentes.
+                                </p>
                             </div>
                         </div>
                         <div class="step">
                             <div class="step-number">3</div>
                             <div class="step-content">
                                 <strong>Evaluación por Ítems</strong>
-                                <p>Cada ítem se califica con: <strong>25%</strong> <strong>50%</strong> <strong>75%</strong> o <strong>100%</strong> según el cumplimiento observado.</p>
+                                <p>Cada ítem se califica con: <strong>25%</strong> <strong>50%</strong>
+                                    <strong>75%</strong> o <strong>100%</strong> según el cumplimiento observado.
+                                </p>
                             </div>
                         </div>
                         <div class="step">
                             <div class="step-number">4</div>
                             <div class="step-content">
                                 <strong>Cálculo Automático</strong>
-                                <p>El sistema calcula automáticamente el resultado final ponderado, considerando la importancia de cada ítem.</p>
+                                <p>El sistema calcula automáticamente el resultado final ponderado, considerando la
+                                    importancia de cada ítem.</p>
                             </div>
                         </div>
                     </div>
 
                     <h3>📈 Criterios de Evaluación</h3>
-                    
+
                     <div class="criteria-box" id="criteriaProducto">
                         <h4>🟦 Proveedores de PRODUCTO</h4>
-                        <p id="textoProducto">Se evalúan <span id="cantidadProducto">7</span> aspectos con las siguientes ponderaciones:</p>
+                        <p id="textoProducto">Se evalúan <span id="cantidadProducto">7</span> aspectos con las
+                            siguientes ponderaciones:</p>
                         <ul id="listaProducto">
                             <!-- Se llena dinámicamente desde la configuración -->
                         </ul>
@@ -111,14 +123,17 @@
 
                     <div class="criteria-box" id="criteriaServicio">
                         <h4>🟩 Proveedores de SERVICIO</h4>
-                        <p id="textoServicio">Se evalúan <span id="cantidadServicio">6</span> aspectos con las siguientes ponderaciones:</p>
+                        <p id="textoServicio">Se evalúan <span id="cantidadServicio">6</span> aspectos con las
+                            siguientes ponderaciones:</p>
                         <ul id="listaServicio">
                             <!-- Se llena dinámicamente desde la configuración -->
                         </ul>
                     </div>
 
                     <div class="info-note">
-                        <strong>⚠️ Importante:</strong> Cada evaluador solo puede evaluar a los proveedores que tiene asignados. Una vez evaluado un proveedor, no aparecerá nuevamente en la lista hasta que se elimine la evaluación anterior.
+                        <strong>⚠️ Importante:</strong> Cada evaluador solo puede evaluar a los proveedores que tiene
+                        asignados. Una vez evaluado un proveedor, no aparecerá nuevamente en la lista hasta que se
+                        elimine la evaluación anterior.
                     </div>
                 </div>
             </section>
@@ -173,12 +188,6 @@
                         <option value="">-- Primero seleccione el tipo de proveedor --</option>
                     </select>
                 </section>
-
-                <section class="form-section" id="correoSection" style="display: none;">
-                    <h2>5. Correo Electrónico del Proveedor</h2>
-                    <input type="email" id="correoProveedor" placeholder="ejemplo@proveedor.com" required>
-                    <small>Ingrese el correo electrónico del proveedor para enviar la evaluación</small>
-                </section>
                 <div class="step-navigation">
                     <button type="button" class="btn-prev" onclick="anteriorPaso()">← Anterior</button>
                     <button type="button" class="btn-next" onclick="siguientePaso()">Siguiente →</button>
@@ -207,8 +216,9 @@
                     </div>
                 </section>
                 <div class="step-navigation">
-                    <button type="submit" id="guardarBtn" class="btn-save">💾 Guardar Evaluación</button>
-                    <button type="button" id="limpiarBtn" class="btn-clear">🗑️ Limpiar</button>
+                    <button type="button" class="btn-prev" onclick="anteriorPaso()">← Anterior</button>
+                    <button type="submit" id="guardarBtn" class="btn-save" style="margin-left: auto;">💾 Guardar
+                        Evaluación</button>
                 </div>
             </div>
         </form>
@@ -219,8 +229,9 @@
         <div class="success-modal-content">
             <div class="success-icon">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
-                    <path d="M8 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" />
+                    <path d="M8 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
                 </svg>
             </div>
             <h2>¡Éxito!</h2>
@@ -229,8 +240,8 @@
         </div>
     </div>
 
-    <script src="js/script.js"></script>
+    <script src="js/script.js?v=37"></script>
     <!-- Scripts en orden: Supabase -> Config -> Service -> Main -->
 </body>
-</html>
 
+</html>
