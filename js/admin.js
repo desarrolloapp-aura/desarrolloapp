@@ -1548,6 +1548,18 @@ function inicializarEventos() {
         console.log('Nota: Botón guardarConfigBtn no encontrado (posiblemente usando guardarConfigBtnSidebar)');
     }
 
+    // Guardar configuración (Sidebar) - AGREGADO FIX
+    const btnGuardarSidebar = document.getElementById('guardarConfigBtnSidebar');
+    if (btnGuardarSidebar) {
+        console.log('Botón guardar Sidebar encontrado');
+        btnGuardarSidebar.onclick = async function () {
+            console.log('Guardando configuración desde Sidebar...');
+            await guardarConfiguracionCompleta();
+        };
+    } else {
+        console.warn('Botón guardarConfigBtnSidebar NO encontrado en el DOM');
+    }
+
     // Agregar ítem PRODUCTO
     const btnAgregarProducto = document.getElementById('agregarItemProducto');
     if (btnAgregarProducto) {
