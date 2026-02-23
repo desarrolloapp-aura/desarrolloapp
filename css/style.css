@@ -429,6 +429,17 @@ select:focus {
     accent-color: #111827;
 }
 
+.badge-progreso {
+    font-size: 0.8em;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.radio-group label:hover .badge-progreso {
+    color: white !important;
+}
+
 .item-evaluacion {
     margin-bottom: 20px;
     padding: 20px;

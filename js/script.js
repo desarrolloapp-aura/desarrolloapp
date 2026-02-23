@@ -685,6 +685,7 @@ function inicializarEvaluadores() {
 function inicializarEventos() {
     // Cambio de evaluador
     document.getElementById('evaluador').addEventListener('change', async function () {
+        await actualizarEstadoCategorias();
         await actualizarProveedores();
     });
 
@@ -729,6 +730,109 @@ function inicializarEventos() {
     // Limpiar formulario (Button removed, logic kept for internal use)
     // document.getElementById('limpiarBtn').addEventListener('click', ... );
 
+}
+
+async function actualizarEstadoCategorias() {
+    const evaluador = document.getElementById('evaluador').value;
+    const radioProducto = document.querySelector('input[name="tipoProveedor"][value="PRODUCTO"]');
+    const radioServicio = document.querySelector('input[name="tipoProveedor"][value="SERVICIO"]');
+    const badgeProducto = document.getElementById('badgeProducto');
+    const badgeServicio = document.getElementById('badgeServicio');
+    const labelProducto = document.getElementById('labelProducto');
+    const labelServicio = document.getElementById('labelServicio');
+
+    if (!evaluador) {
+        if (radioProducto) {
+            radioProducto.disabled = true;
+            radioProducto.checked = false;
+        }
+        if (radioServicio) {
+            radioServicio.disabled = true;
+            radioServicio.checked = false;
+        }
+        if (badgeProducto) badgeProducto.textContent = '';
+        if (badgeServicio) badgeServicio.textContent = '';
+        return;
+    }
+
+    const hoy = new Date();
+    const anioActual = hoy.getFullYear();
+
+    // Intentar cargar evaluaciones
+    let evaluaciones = [];
+    try {
+        evaluaciones = await cargarEvaluaciones();
+    } catch (e) {
+        console.warn('No se pudieron cargar evaluaciones para los contadores:', e);
+    }
+
+    // Lógica para PRODUCTO
+    const asignadosP = obtenerProveedoresPorEvaluador(evaluador, 'PRODUCTO');
+    const evaluadosP = evaluaciones.filter(e =>
+        e.evaluador === evaluador &&
+        e.tipo === 'PRODUCTO' &&
+        new Date(e.fecha).getFullYear() === anioActual
+    ).map(e => e.proveedor);
+
+    // Lógica para SERVICIO
+    const asignadosS = obtenerProveedoresPorEvaluador(evaluador, 'SERVICIO');
+    const evaluadosS = evaluaciones.filter(e =>
+        e.evaluador === evaluador &&
+        e.tipo === 'SERVICIO' &&
+        new Date(e.fecha).getFullYear() === anioActual
+    ).map(e => e.proveedor);
+
+    // Actualizar UI para PRODUCTO
+    if (labelProducto && radioProducto) {
+        if (asignadosP.length > 0) {
+            labelProducto.style.display = 'flex';
+            const completo = evaluadosP.length >= asignadosP.length;
+            radioProducto.disabled = completo;
+            if (badgeProducto) {
+                badgeProducto.textContent = `(${evaluadosP.length}/${asignadosP.length})`;
+                badgeProducto.style.color = completo ? '#28a745' : '#f39c12';
+                badgeProducto.style.fontWeight = 'bold';
+                badgeProducto.style.marginLeft = '5px';
+            }
+        } else {
+            labelProducto.style.display = 'none';
+            radioProducto.disabled = true;
+            radioProducto.checked = false;
+        }
+    }
+
+    // Actualizar UI para SERVICIO
+    if (labelServicio && radioServicio) {
+        if (asignadosS.length > 0) {
+            labelServicio.style.display = 'flex';
+            const completo = evaluadosS.length >= asignadosS.length;
+            radioServicio.disabled = completo;
+            if (badgeServicio) {
+                badgeServicio.textContent = `(${evaluadosS.length}/${asignadosS.length})`;
+                badgeServicio.style.color = completo ? '#28a745' : '#f39c12';
+                badgeServicio.style.fontWeight = 'bold';
+                badgeServicio.style.marginLeft = '5px';
+            }
+        } else {
+            labelServicio.style.display = 'none';
+            radioServicio.disabled = true;
+            radioServicio.checked = false;
+        }
+    }
+
+    // Auto-selección inteligente
+    if (radioProducto && radioServicio) {
+        if (!radioProducto.disabled && radioServicio.disabled) {
+            radioProducto.checked = true;
+            // Quitamos la clase selected de otros y ponemos en este
+            document.querySelectorAll('input[name="tipoProveedor"]').forEach(r => r.closest('label').classList.remove('selected'));
+            radioProducto.closest('label').classList.add('selected');
+        } else if (radioProducto.disabled && !radioServicio.disabled) {
+            radioServicio.checked = true;
+            document.querySelectorAll('input[name="tipoProveedor"]').forEach(r => r.closest('label').classList.remove('selected'));
+            radioServicio.closest('label').classList.add('selected');
+        }
+    }
 }
 
 async function actualizarProveedores() {
@@ -1140,6 +1244,7 @@ function limpiarFormulario() {
     }
 
     // Volver al paso inicial
+    actualizarEstadoCategorias();
     mostrarPaso(0);
 }
 

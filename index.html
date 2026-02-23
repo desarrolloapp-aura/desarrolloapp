@@ -163,14 +163,14 @@
 
                 <section class="form-section">
                     <h2>3. Tipo de Proveedor</h2>
-                    <div class="radio-group">
-                        <label>
-                            <input type="radio" name="tipoProveedor" value="PRODUCTO" required>
-                            <span>PRODUCTO</span>
+                    <div class="radio-group" id="tipoProveedorGroup">
+                        <label id="labelProducto">
+                            <input type="radio" name="tipoProveedor" value="PRODUCTO" required disabled>
+                            <span>PRODUCTO <small class="badge-progreso" id="badgeProducto"></small></span>
                         </label>
-                        <label>
-                            <input type="radio" name="tipoProveedor" value="SERVICIO" required>
-                            <span>SERVICIO</span>
+                        <label id="labelServicio">
+                            <input type="radio" name="tipoProveedor" value="SERVICIO" required disabled>
+                            <span>SERVICIO <small class="badge-progreso" id="badgeServicio"></small></span>
                         </label>
                     </div>
                 </section>
