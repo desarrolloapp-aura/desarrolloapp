@@ -789,10 +789,12 @@ async function actualizarEstadoCategorias() {
             const completo = evaluadosP.length >= asignadosP.length;
             radioProducto.disabled = completo;
             if (badgeProducto) {
-                badgeProducto.textContent = `(${evaluadosP.length}/${asignadosP.length})`;
+                badgeProducto.textContent = `Evaluación realizada (${evaluadosP.length}/${asignadosP.length})`;
                 badgeProducto.style.color = completo ? '#28a745' : '#f39c12';
                 badgeProducto.style.fontWeight = 'bold';
                 badgeProducto.style.marginLeft = '5px';
+                badgeProducto.style.display = 'block'; // Asegurar que baje de línea
+                badgeProducto.style.fontSize = '0.75em';
             }
         } else {
             labelProducto.style.display = 'none';
@@ -808,10 +810,12 @@ async function actualizarEstadoCategorias() {
             const completo = evaluadosS.length >= asignadosS.length;
             radioServicio.disabled = completo;
             if (badgeServicio) {
-                badgeServicio.textContent = `(${evaluadosS.length}/${asignadosS.length})`;
+                badgeServicio.textContent = `Evaluación realizada (${evaluadosS.length}/${asignadosS.length})`;
                 badgeServicio.style.color = completo ? '#28a745' : '#f39c12';
                 badgeServicio.style.fontWeight = 'bold';
                 badgeServicio.style.marginLeft = '5px';
+                badgeServicio.style.display = 'block'; // Asegurar que baje de línea
+                badgeServicio.style.fontSize = '0.75em';
             }
         } else {
             labelServicio.style.display = 'none';
